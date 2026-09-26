@@ -83,7 +83,7 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
-      <div className="mx-auto grid h-16 max-w-7xl grid-cols-[auto_1fr_auto] items-center gap-3 px-4 sm:px-6">
+      <div className="relative mx-auto grid h-16 max-w-7xl grid-cols-[auto_1fr_auto] items-center gap-3 px-4 sm:px-6">
 
         {/* SODFA Logo */}
         <Link
@@ -112,7 +112,7 @@ export function Header() {
           ))}
         </nav>
 
-        <div className="flex shrink-0 items-center gap-1">
+        <div className="me-12 flex shrink-0 items-center gap-1 md:me-0">
           <button
             aria-label={t("nav.search")}
             onClick={() => setSearchOpen((v) => !v)}
@@ -140,7 +140,7 @@ export function Header() {
           <button
             aria-label={t("nav.menu")}
             onClick={() => setMenuOpen((v) => !v)}
-            className="grid h-10 w-10 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-card hover:text-foreground md:hidden"
+            className="absolute end-4 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-card hover:text-foreground sm:end-6 md:hidden"
           >
             {menuOpen ? (
               <X className="h-5 w-5" />

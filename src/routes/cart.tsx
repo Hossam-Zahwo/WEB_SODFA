@@ -16,6 +16,9 @@ const GOVERNORATES = [
   "المنيا", "أسيوط", "سوهاج", "قنا", "الأقصر", "أسوان", "البحر الأحمر", "مطروح", "الوادي الجديد", "شمال سيناء", "جنوب سيناء",
 ];
 
+// SODFA store WhatsApp number (Egypt country code, without the leading 0).
+const STORE_WHATSAPP_NUMBER = "201093384952";
+
 function CartPage() {
   const { t, price } = useLang();
   const { lines, count, subtotal, setQty, remove } = useCart();
@@ -44,11 +47,7 @@ function CartPage() {
       return;
     }
 
-    const whatsappNumber = String(import.meta.env.VITE_WHATSAPP_NUMBER || "").replace(/\D/g, "");
-    if (!whatsappNumber) {
-      setError("رقم واتساب المتجر غير مُضاف في إعدادات المشروع بعد. أضف VITE_WHATSAPP_NUMBER ثم جرّب مرة أخرى.");
-      return;
-    }
+    const whatsappNumber = STORE_WHATSAPP_NUMBER;
 
     try {
       const order = await createStoreOrder({
