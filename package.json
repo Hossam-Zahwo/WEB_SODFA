@@ -45,6 +45,7 @@
     "embla-carousel-react": "latest",
     "input-otp": "latest",
     "lucide-react": "latest",
+    "nitro": "^3.0.260903-beta",
     "react": "latest",
     "react-day-picker": "latest",
     "react-dom": "latest",
@@ -57,13 +58,13 @@
     "vaul": "latest"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "latest",
     "@tanstack/router-plugin": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "@vitejs/plugin-react": "latest",
     "tailwindcss": "latest",
     "typescript": "latest",
-    "vite": "latest",
-    "@tailwindcss/vite": "latest"
+    "vite": "latest"
   }
 }
