@@ -20,7 +20,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const logout = async () => { await signOutAdmin(); await navigate({ to: "/admin/login" }); };
 
   return (
-    <div dir="rtl" className="min-h-screen bg-slate-950 text-slate-100">
+    <div dir="rtl" className="sodfa-admin-shell min-h-screen bg-background text-foreground">
       <button className="fixed right-4 top-4 z-50 rounded-lg border border-slate-700 bg-slate-900 p-2 lg:hidden" onClick={() => setOpen(!open)} aria-label="القائمة">
         {open ? <X size={20}/> : <Menu size={20}/>}
       </button>

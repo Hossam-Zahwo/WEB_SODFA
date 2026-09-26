@@ -31,16 +31,17 @@ function colorHex(value?: string | null) {
 }
 
 function Rating({ average = 0, count = 0 }: { average?: number; count?: number }) {
+  const { t } = useLang();
   const rounded = Math.round(average);
   return (
-    <div className="flex items-center gap-1.5" aria-label={`التقييم ${average.toFixed(1)} من 5`}>
+    <div className="flex items-center gap-1.5" aria-label={`${t("product.rating")} ${average.toFixed(1)} / 5`}>
       <div className="flex items-center gap-0.5">
         {Array.from({ length: 5 }).map((_, i) => (
-          <Star key={i} size={12} className={cn(i < rounded ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30")} />
+          <Star key={i} size={12} className={cn(i < rounded ? "fill-primary-light text-primary-light" : "text-muted-foreground/30")} />
         ))}
       </div>
       <span className="text-[10px] text-subtle">
-        {count ? `${average.toFixed(1)} (${count})` : "لا توجد تقييمات بعد"}
+        {count ? `${average.toFixed(1)} (${count})` : t("product.noRatings")}
       </span>
     </div>
   );
@@ -102,22 +103,22 @@ export function ProductCard({
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/10 to-transparent" />
         <div className="absolute start-3 top-3 z-10 flex max-w-[72%] flex-wrap gap-1.5">
           {off > 0 && (
-            <span className="rounded-full border border-emerald-300/20 bg-emerald-500/90 px-2.5 py-1 text-[10px] font-extrabold text-white shadow-sm">
+            <span className="rounded-full border border-primary-light/25 bg-primary-light px-2.5 py-1 text-[10px] font-extrabold text-white shadow-sm">
               {off}% {t("product.off")}
             </span>
           )}
           {!variant && product.tags.includes("best") && (
-            <span className="rounded-full bg-amber-500/90 px-2.5 py-1 text-[10px] font-extrabold text-white shadow-sm">الأكثر مبيعًا</span>
+            <span className="rounded-full bg-primary/90 px-2.5 py-1 text-[10px] font-extrabold text-white shadow-sm">{t("product.best")}</span>
           )}
           {!variant && product.tags.includes("featured") && (
-            <span className="rounded-full bg-fuchsia-600/90 px-2.5 py-1 text-[10px] font-extrabold text-white shadow-sm">مميز</span>
+            <span className="rounded-full bg-primary-light/90 px-2.5 py-1 text-[10px] font-extrabold text-white shadow-sm">{t("product.featured")}</span>
           )}
           {!variant && product.tags.includes("new") && (
-            <span className="rounded-full bg-sky-600/90 px-2.5 py-1 text-[10px] font-extrabold text-white shadow-sm">جديد</span>
+            <span className="rounded-full bg-primary-dark/90 px-2.5 py-1 text-[10px] font-extrabold text-white shadow-sm">{t("product.new")}</span>
           )}
         </div>
         {variant && (
-          <span className="absolute end-3 top-3 flex max-w-[52%] items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-semibold text-slate-900 shadow-sm backdrop-blur">
+          <span className="absolute end-3 top-3 flex max-w-[52%] items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[10px] font-semibold text-foreground shadow-sm backdrop-blur">
             <Layers3 size={11} /> <span className="truncate">{variant.name}</span>
           </span>
         )}
@@ -129,7 +130,7 @@ export function ProductCard({
           {variant && <div className="mt-1 line-clamp-1 text-[11px] text-subtle">{pick(product.name.ar, product.name.en)}</div>}
           <div className="mt-2 flex flex-wrap gap-x-2 gap-y-0.5 text-[10px] text-subtle">
             {(variant?.sku || product.sku) && <span>SKU: {variant?.sku || product.sku}</span>}
-            {(variant?.barcode || product.barcode) && <span>باركود: {variant?.barcode || product.barcode}</span>}
+            {(variant?.barcode || product.barcode) && <span>{t("product.barcode")}: {variant?.barcode || product.barcode}</span>}
           </div>
         </div>
 
@@ -144,7 +145,7 @@ export function ProductCard({
           {variantColor ? (
             <span
               title={variantColor}
-              className="h-4 w-4 rounded-full border border-slate-300 ring-2 ring-white"
+              className="h-4 w-4 rounded-full border border-border ring-2 ring-white"
               style={{ backgroundColor: colorHex(variantColor) }}
             />
           ) : (
@@ -152,7 +153,7 @@ export function ProductCard({
               <span
                 key={`${c.name.en}-${c.hex}`}
                 title={pick(c.name.ar, c.name.en)}
-                className="h-4 w-4 rounded-full border border-slate-300"
+                className="h-4 w-4 rounded-full border border-border"
                 style={{ backgroundColor: c.hex }}
               />
             ))

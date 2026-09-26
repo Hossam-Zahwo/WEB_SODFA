@@ -18,7 +18,7 @@ export function AdminGuard({ children }: { children: React.ReactNode }) {
     return () => { alive = false; };
   }, [navigate]);
 
-  if (loading) return <div dir="rtl" className="grid min-h-screen place-items-center bg-slate-950 text-slate-200">جاري التحقق من الصلاحيات...</div>;
+  if (loading) return <div dir="rtl" className="grid min-h-screen place-items-center bg-background text-foreground">جاري التحقق من الصلاحيات...</div>;
   if (!admin) return null;
   return <>{children}</>;
 }

@@ -12,7 +12,7 @@ export function FeatureStrip() {
   const { t } = useLang();
 
   return (
-    <div className="mx-auto max-w-7xl px-4 sm:px-6">
+    <div className="sodfa-section-motion mx-auto max-w-7xl px-4 sm:px-6">
       <div className="relative overflow-hidden rounded-2xl border border-border bg-input">
         <div
           className="bg-sodfa pointer-events-none absolute -top-28 start-1/3 h-52 w-52 rounded-full opacity-15 blur-3xl"

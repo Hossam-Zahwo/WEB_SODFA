@@ -5,6 +5,7 @@ export type DbCategory = {
   slug: string;
   name_ar: string;
   name_en: string;
+  image_url: string | null;
   created_at?: string;
 };
 
@@ -394,7 +395,7 @@ export async function getStoreProduct(slug: string): Promise<StoreProduct | null
 
   const [categoryResult, variantsResult, imagesResult] = await Promise.allSettled([
     product.category_id
-      ? supabase.from("categories").select("id,slug,name_ar,name_en,created_at").eq("id", product.category_id).maybeSingle()
+      ? supabase.from("categories").select("id,slug,name_ar,name_en,image_url,created_at").eq("id", product.category_id).maybeSingle()
       : Promise.resolve({ data: null, error: null } as any),
     listProductVariants([product.id]),
     listProductImages([product.id]),

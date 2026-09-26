@@ -106,26 +106,26 @@ function AdminLogin() {
   };
 
   return (
-    <div dir="rtl" className="grid min-h-screen place-items-center bg-slate-950 p-5 text-slate-100">
-      <Card className="w-full max-w-md border-slate-800 bg-slate-900 text-slate-100">
+    <div dir="rtl" className="sodfa-admin-login grid min-h-screen place-items-center bg-background p-5 text-foreground">
+      <Card className="w-full max-w-md border-border bg-card text-foreground shadow-card">
         <CardHeader className="text-center">
           <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-2xl bg-white text-slate-950">
             <LockKeyhole />
           </div>
           <CardTitle className="text-2xl">دخول لوحة التحكم</CardTitle>
-          <p className="text-sm text-slate-400">SODFA Admin</p>
+          <p className="text-sm text-subtle">SODFA Admin</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={submit} className="space-y-4">
             <div>
               <label className="mb-2 block text-sm">البريد الإلكتروني</label>
               <div className="relative">
-                <Mail className="absolute right-3 top-3 h-4 w-4 text-slate-500" />
+                <Mail className="absolute right-3 top-3 h-4 w-4 text-subtle" />
                 <Input
                   dir="ltr"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="border-slate-700 bg-slate-950 pr-10"
+                  className="border-border bg-input pr-10"
                   type="email"
                   required
                 />
@@ -138,7 +138,7 @@ function AdminLogin() {
                 dir="ltr"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="border-slate-700 bg-slate-950"
+                className="border-border bg-input"
                 type="password"
                 required
               />

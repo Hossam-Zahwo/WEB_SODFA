@@ -2,11 +2,7 @@
 @source "../src";
 @import "tw-animate-css";
 
-/*
- * SODFA design system — dark, premium, cinematic.
- * All colors in oklch. Never hardcode colors in components.
- */
-
+/* SODFA — Light Purple visual system */
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -14,7 +10,6 @@
   --radius-xl: calc(var(--radius) + 4px);
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
-
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -38,323 +33,138 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-
-  --font-display: "Space Grotesk", "Cairo", sans-serif;
-  --font-sans: "Cairo", "Inter", sans-serif;
+  --font-display: "Inter", "Cairo", sans-serif;
+  --font-sans: "Inter", "Cairo", sans-serif;
 }
 
 :root {
-  --radius: 0.875rem;
-
-  /* #000000 */
-  --background: oklch(0 0 0);
-  /* #FFFFFF */
-  --foreground: oklch(1 0 0);
-  /* #111111 */
-  --card: oklch(0.176 0 0);
-  /* #181818 */
-  --card-hover: oklch(0.221 0 0);
-  --card-foreground: oklch(1 0 0);
-  /* #8E2AA8 */
-  --primary: oklch(0.487 0.213 320.5);
+  --radius: 0.9rem;
+  --background: oklch(0.995 0.004 300);
+  --foreground: oklch(0.19 0.018 300);
+  --card: oklch(1 0 0);
+  --card-hover: oklch(0.985 0.012 300);
+  --card-foreground: oklch(0.19 0.018 300);
+  --primary: oklch(0.49 0.22 321);
   --primary-foreground: oklch(1 0 0);
-  /* #C06BCF */
-  --primary-light: oklch(0.674 0.153 320.9);
-  /* #74218F */
-  --primary-dark: oklch(0.408 0.185 318.9);
-  --secondary: oklch(0.176 0 0);
-  --secondary-foreground: oklch(1 0 0);
-  --muted: oklch(0.176 0 0);
-  /* #B8B8B8 */
-  --muted-foreground: oklch(0.784 0 0);
-  /* #777777 */
-  --subtle: oklch(0.559 0 0);
-  --accent: oklch(0.221 0 0);
-  --accent-foreground: oklch(1 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
+  --primary-light: oklch(0.68 0.17 320);
+  --primary-dark: oklch(0.40 0.19 320);
+  --secondary: oklch(0.97 0.015 300);
+  --secondary-foreground: oklch(0.25 0.03 300);
+  --muted: oklch(0.965 0.012 300);
+  --muted-foreground: oklch(0.45 0.025 300);
+  --subtle: oklch(0.53 0.025 300);
+  --accent: oklch(0.94 0.035 315);
+  --accent-foreground: oklch(0.30 0.06 315);
+  --destructive: oklch(0.58 0.22 27);
   --destructive-foreground: oklch(1 0 0);
-  /* #272727 */
-  --border: oklch(0.276 0 0);
-  /* #0D0D0D */
-  --input: oklch(0.145 0 0);
-  --ring: oklch(0.487 0.213 320.5);
-
-  --gradient-sodfa: linear-gradient(
-    135deg,
-    var(--primary-light) 0%,
-    oklch(0.53 0.2 320.7) 50%,
-    var(--primary-dark) 100%
-  );
-  --glow-soft: 0 0 40px -10px color-mix(in oklab, var(--primary) 55%, transparent);
-  --glow-strong: 0 0 70px -8px color-mix(in oklab, var(--primary-light) 60%, transparent);
-  --shadow-card: 0 20px 50px -30px oklch(0 0 0 / 0.9);
+  --border: oklch(0.90 0.018 300);
+  --input: oklch(0.985 0.008 300);
+  --ring: oklch(0.49 0.22 321);
+  --gradient-sodfa: linear-gradient(135deg, #C06BCF 0%, #8E2AA8 52%, #74218F 100%);
+  --glow-soft: 0 12px 35px -18px color-mix(in oklab, var(--primary) 48%, transparent);
+  --glow-strong: 0 20px 60px -20px color-mix(in oklab, var(--primary-light) 52%, transparent);
+  --shadow-card: 0 18px 50px -32px rgba(65, 27, 78, .30);
 }
 
 @layer base {
-  * {
-    border-color: var(--color-border);
-  }
-
-  html {
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  body {
-    background-color: var(--color-background);
-    color: var(--color-foreground);
-    font-family: var(--font-sans);
-    -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
-  }
-
-  img,
-  video,
-  svg {
-    max-width: 100%;
-  }
-
-  h1,
-  h2,
-  h3 {
-    font-family: var(--font-display);
-    letter-spacing: -0.02em;
-  }
-
-  html[dir="rtl"] h1,
-  html[dir="rtl"] h2,
-  html[dir="rtl"] h3 {
-    font-family: var(--font-sans);
-  }
-
-  ::selection {
-    background: color-mix(in oklab, var(--primary) 60%, transparent);
-  }
+  * { border-color: var(--color-border); }
+  html { -webkit-tap-highlight-color: transparent; scroll-behavior: smooth; }
+  body { background-color: var(--color-background); color: var(--color-foreground); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+  img, video, svg { max-width: 100%; }
+  h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.025em; }
+  html[dir="rtl"] h1, html[dir="rtl"] h2, html[dir="rtl"] h3 { font-family: "Cairo", "Inter", sans-serif; }
+  ::selection { background: color-mix(in oklab, var(--primary) 22%, white); color: var(--foreground); }
 }
 
-@utility text-gradient {
-  background-image: var(--gradient-sodfa);
-  background-clip: text;
-  -webkit-background-clip: text;
-  color: transparent;
-}
+@utility text-gradient { background-image: var(--gradient-sodfa); background-clip: text; -webkit-background-clip: text; color: transparent; }
+@utility bg-sodfa { background-image: var(--gradient-sodfa); }
+@utility glow { box-shadow: var(--glow-soft); }
+@utility glow-strong { box-shadow: var(--glow-strong); }
+@utility shadow-card { box-shadow: var(--shadow-card); }
 
-@utility bg-sodfa {
-  background-image: var(--gradient-sodfa);
-}
-
-@utility glow {
-  box-shadow: var(--glow-soft);
-}
-
-@utility glow-strong {
-  box-shadow: var(--glow-strong);
-}
-
-@utility shadow-card {
-  box-shadow: var(--shadow-card);
-}
-
-/* Purple shimmer skeleton */
 @utility skeleton {
-  background-color: var(--card);
+  background-color: var(--muted);
   position: relative;
   overflow: hidden;
-  &::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    transform: translateX(-100%);
-    background-image: linear-gradient(
-      90deg,
-      transparent,
-      color-mix(in oklab, var(--primary) 22%, transparent),
-      transparent
-    );
-    animation: sodfa-shimmer 1.6s infinite;
-  }
+  &::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%); background-image: linear-gradient(90deg, transparent, color-mix(in oklab, var(--primary) 12%, transparent), transparent); animation: sodfa-shimmer 1.6s infinite; }
 }
 
-@utility fade-up {
-  animation: sodfa-fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+.sodfa-section-motion { animation: sodfa-section-in .75s cubic-bezier(.22,1,.36,1) both; }
+.sodfa-slider-arrow {
+  display: grid; height: 42px; width: 42px; place-items: center; border: 1px solid color-mix(in oklab, var(--primary) 18%, var(--border)); border-radius: 999px;
+  background: color-mix(in oklab, white 88%, var(--primary) 12%); color: var(--primary-dark); box-shadow: 0 10px 28px -16px rgba(80, 32, 95, .35);
+  transition: transform .35s cubic-bezier(.22,1,.36,1), box-shadow .35s ease, background .35s ease;
 }
+.sodfa-slider-arrow:hover { transform: translateY(-50%) scale(1.08); background: white; box-shadow: 0 14px 30px -15px rgba(80,32,95,.42); }
+.sodfa-slider-arrow:active { transform: translateY(-50%) scale(.96); }
+.sodfa-category-card { isolation: isolate; }
 
-@keyframes sodfa-shimmer {
-  100% {
-    transform: translateX(100%);
-  }
-}
-
-@keyframes sodfa-fade-up {
-  from {
-    opacity: 0;
-    transform: translateY(18px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@keyframes sodfa-ken-burns {
-  from {
-    transform: scale(1.02);
-  }
-  to {
-    transform: scale(1.16);
-  }
-}
-
-@keyframes sodfa-pulse-glow {
-  0%,
-  100% {
-    opacity: 0.55;
-    transform: scale(0.96);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.06);
-  }
-}
-
-/* SODFA admin product editor: keep the form in the same black / purple visual identity. */
-.sodfa-admin-editor {
-  color: #f7f2ff;
-}
-.sodfa-admin-editor .bg-white,
-.sodfa-admin-editor .bg-slate-50 {
-  background: #0f0b14 !important;
-}
-.sodfa-admin-editor .border-slate-200,
-.sodfa-admin-editor .border-slate-300 {
-  border-color: #30223b !important;
-}
-.sodfa-admin-editor .text-slate-900,
-.sodfa-admin-editor .text-slate-800,
-.sodfa-admin-editor .text-slate-700 {
-  color: #f7f2ff !important;
-}
-.sodfa-admin-editor .text-slate-600,
-.sodfa-admin-editor .text-slate-500,
-.sodfa-admin-editor .text-slate-400 {
-  color: #bda9c9 !important;
-}
-.sodfa-admin-editor input,
-.sodfa-admin-editor textarea,
-.sodfa-admin-editor select {
-  color: #fff !important;
-  background: #09070d !important;
-  border-color: #3b2a49 !important;
-}
-.sodfa-admin-editor input::placeholder,
-.sodfa-admin-editor textarea::placeholder {
-  color: #806c89 !important;
-}
-.sodfa-admin-editor input:focus,
-.sodfa-admin-editor textarea:focus,
-.sodfa-admin-editor select:focus {
-  border-color: #a64cc1 !important;
-  box-shadow: 0 0 0 2px color-mix(in oklab, #a64cc1 18%, transparent);
-}
-.sodfa-admin-editor option {
-  color: #fff;
-  background: #120c18;
-}
-.sodfa-admin-editor .shadow-sm,
-.sodfa-admin-editor .shadow-2xl {
-  box-shadow: 0 20px 60px -35px rgba(0,0,0,.9);
-}
-.sodfa-admin-editor button:not(.bg-blue-600) {
-  color: #f7f2ff;
-}
-.sodfa-admin-editor .ring-slate-200 {
-  --tw-ring-color: #3b2a49 !important;
-}
-.sodfa-admin-editor .hover\:bg-slate-50:hover,
-.sodfa-admin-editor .hover\:bg-slate-100:hover {
-  background: #1b1221 !important;
-}
-.sodfa-admin-editor .bg-blue-600 {
-  background: linear-gradient(135deg, #a64cc1, #6e2d8b) !important;
-}
-.sodfa-admin-editor .hover\:bg-blue-700:hover {
-  background: linear-gradient(135deg, #b45ed0, #7b329b) !important;
-}
-
-/* SODFA v3: darker admin editor with high-contrast controls. */
-.sodfa-admin-editor {
-  --admin-bg: #08060c;
-  --admin-panel: #0f0b14;
-  --admin-input: #050409;
-  --admin-border: #4a315a;
-  --admin-purple: #a64cc1;
-  background: #08060c !important;
-  color: #f8f3ff !important;
-  border-radius: 1.5rem;
-}
-.sodfa-admin-editor > * { background: #08060c !important; }
-.sodfa-admin-editor .bg-white,
-.sodfa-admin-editor .bg-slate-50,
-.sodfa-admin-editor .bg-slate-100 { background: var(--admin-panel) !important; }
-.sodfa-admin-editor .border-slate-200,
-.sodfa-admin-editor .border-slate-300 { border-color: var(--admin-border) !important; }
-.sodfa-admin-editor .text-slate-900,
-.sodfa-admin-editor .text-slate-800,
-.sodfa-admin-editor .text-slate-700,
-.sodfa-admin-editor .text-slate-600 { color: #f8f3ff !important; }
-.sodfa-admin-editor .text-slate-500,
-.sodfa-admin-editor .text-slate-400 { color: #bda9c9 !important; }
-.sodfa-admin-editor input:not([type="checkbox"]):not([type="file"]),
-.sodfa-admin-editor textarea,
-.sodfa-admin-editor select {
-  min-height: 42px;
-  color: #ffffff !important;
-  background-color: var(--admin-input) !important;
-  border: 1px solid var(--admin-border) !important;
-  border-radius: .75rem !important;
-}
-.sodfa-admin-editor input::placeholder,
-.sodfa-admin-editor textarea::placeholder { color: #8f789b !important; opacity: 1 !important; }
-.sodfa-admin-editor input:focus,
-.sodfa-admin-editor textarea:focus,
-.sodfa-admin-editor select:focus {
-  outline: none !important;
-  border-color: var(--admin-purple) !important;
-  box-shadow: 0 0 0 3px rgba(166,76,193,.16) !important;
-}
-.sodfa-admin-editor option { color: #fff !important; background: #0f0b14 !important; }
-.sodfa-admin-editor input[type="checkbox"] { accent-color: #a64cc1; }
-.sodfa-admin-editor button { color: #f8f3ff; }
-.sodfa-admin-editor .hover\:bg-slate-50:hover,
-.sodfa-admin-editor .hover\:bg-slate-100:hover { background: #1b1221 !important; }
-.sodfa-admin-editor .bg-blue-600 { background: linear-gradient(135deg,#a64cc1,#6e2d8b) !important; }
-.sodfa-admin-editor .hover\:bg-blue-700:hover { background: linear-gradient(135deg,#b45ed0,#7b329b) !important; }
-
-/* Product showcase: taller cards + uncropped product photography. */
-.sodfa-product-showcase-card img { object-fit: contain !important; }
-
-
+@keyframes sodfa-shimmer { 100% { transform: translateX(100%); } }
+@keyframes sodfa-section-in { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+@keyframes sodfa-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
 @keyframes sodfa-image-marquee-ltr {
-  from { transform: translateX(-50%); }
-  to { transform: translateX(0); }
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-25%, 0, 0); }
 }
-
-.sodfa-image-marquee {
-  overflow: hidden;
-  width: 100%;
-  mask-image: linear-gradient(to right, transparent, black 7%, black 93%, transparent);
-  -webkit-mask-image: linear-gradient(to right, transparent, black 7%, black 93%, transparent);
+@keyframes sodfa-hero-copy-in {
+  from { opacity: 0; transform: translateY(22px) scale(.985); filter: blur(5px); }
+  to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
 }
+@keyframes sodfa-hero-benefit-in {
+  from { opacity: 0; transform: translateY(18px) scale(.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.fade-up { animation: sodfa-hero-copy-in .9s cubic-bezier(.22,1,.36,1) both; }
+.hero-benefit { animation: sodfa-hero-benefit-in .75s cubic-bezier(.22,1,.36,1) both; }
 
+.sodfa-image-marquee { overflow: hidden; width: 100%; mask-image: linear-gradient(to right, transparent, black 6%, black 94%, transparent); -webkit-mask-image: linear-gradient(to right, transparent, black 6%, black 94%, transparent); }
 .sodfa-image-marquee-track {
   display: flex;
+  flex-wrap: nowrap;
   width: max-content;
-  animation: sodfa-image-marquee-ltr 28s linear infinite;
+  max-width: none;
+  animation: sodfa-image-marquee-ltr 32s linear infinite;
+  animation-timing-function: linear;
   will-change: transform;
+  backface-visibility: hidden;
+  transform: translate3d(0, 0, 0);
 }
+.sodfa-image-marquee-item {
+  flex: 0 0 auto;
+  width: max-content;
+  padding: 0 .45rem;
+}
+/* The strip is intentionally never paused: it is a continuous marquee. */
+.sodfa-image-marquee:hover .sodfa-image-marquee-track { animation-play-state: running; }
+.sodfa-product-showcase-card img { object-fit: contain !important; }
 
-.sodfa-image-marquee-item { flex: 0 0 auto; padding: 0 .45rem; }
-.sodfa-image-marquee:hover .sodfa-image-marquee-track { animation-play-state: paused; }
+/* Admin surfaces inherit the same light identity. */
+.sodfa-admin-login input { background: #fcfafe !important; color: #2d2331 !important; border-color: #dfd2e2 !important; }
+.sodfa-admin-login input:focus { border-color: #9b3db2 !important; box-shadow: 0 0 0 3px rgba(142,42,168,.12) !important; }
+.sodfa-admin-login .text-slate-400, .sodfa-admin-login .text-slate-500 { color: #756779 !important; }
+.sodfa-admin-shell { background: #fbf9fc !important; color: #241a29 !important; }
+.sodfa-admin-shell .bg-slate-950, .sodfa-admin-shell .bg-slate-900, .sodfa-admin-shell .bg-slate-800 { background: #ffffff !important; }
+.sodfa-admin-shell .border-slate-800, .sodfa-admin-shell .border-slate-700 { border-color: #e7dce9 !important; }
+.sodfa-admin-shell .text-slate-100, .sodfa-admin-shell .text-slate-200, .sodfa-admin-shell .text-slate-300 { color: #2d2331 !important; }
+.sodfa-admin-shell .text-slate-400, .sodfa-admin-shell .text-slate-500 { color: #756779 !important; }
+.sodfa-admin-shell .hover\:bg-slate-800:hover { background: #f4edf6 !important; }
+.sodfa-admin-shell .bg-white.text-slate-950 { background: var(--primary) !important; color: white !important; }
+
+.sodfa-admin-editor { background: #ffffff !important; color: #241a29 !important; border-radius: 1.5rem; }
+.sodfa-admin-editor .bg-white, .sodfa-admin-editor .bg-slate-50, .sodfa-admin-editor .bg-slate-100 { background: #ffffff !important; }
+.sodfa-admin-editor .border-slate-200, .sodfa-admin-editor .border-slate-300 { border-color: #e5dbe7 !important; }
+.sodfa-admin-editor .text-slate-900, .sodfa-admin-editor .text-slate-800, .sodfa-admin-editor .text-slate-700, .sodfa-admin-editor .text-slate-600 { color: #2d2331 !important; }
+.sodfa-admin-editor .text-slate-500, .sodfa-admin-editor .text-slate-400 { color: #756779 !important; }
+.sodfa-admin-editor input:not([type="checkbox"]):not([type="file"]), .sodfa-admin-editor textarea, .sodfa-admin-editor select { color: #2d2331 !important; background: #fcfafe !important; border: 1px solid #dfd2e2 !important; }
+.sodfa-admin-editor input::placeholder, .sodfa-admin-editor textarea::placeholder { color: #9a8aa0 !important; }
+.sodfa-admin-editor input:focus, .sodfa-admin-editor textarea:focus, .sodfa-admin-editor select:focus { border-color: #9b3db2 !important; box-shadow: 0 0 0 3px rgba(142,42,168,.12) !important; }
+.sodfa-admin-editor option { color: #2d2331 !important; background: #fff !important; }
+.sodfa-admin-editor button { color: #2d2331; }
+.sodfa-admin-editor .bg-blue-600 { background: var(--gradient-sodfa) !important; color: white !important; }
+.sodfa-admin-editor .hover\:bg-blue-700:hover { background: linear-gradient(135deg,#b873d0,#7b2a96) !important; }
 
 @media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
   .sodfa-image-marquee-track { animation: none; transform: none; }
 }

@@ -15,7 +15,7 @@ export function Section({
   className?: string;
 }) {
   return (
-    <section className={cn("mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16", className)}>
+    <section className={cn("sodfa-section-motion mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16", className)}>
       {(title || action) && (
         <div className="mb-6 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4 sm:mb-8">
           <div className="min-w-0">

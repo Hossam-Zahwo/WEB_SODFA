@@ -7,8 +7,7 @@ import { Stats } from "@/components/Stats";
 import { Section } from "@/components/Section";
 import { ProductGrid } from "@/components/ProductCard";
 import { FindYourPhone } from "@/components/FindYourPhone";
-import { HomeProductImageSlider, HomeProductShowcase } from "@/components/HomeProductShowcase";
-import { CustomerShoppingAssistant } from "@/components/CustomerShoppingAssistant";
+import { HomeProductShowcase } from "@/components/HomeProductShowcase";
 import { CustomerReviews } from "@/components/CustomerReviews";
 import { useLang } from "@/lib/i18n";
 import { listStoreProducts, type StoreProduct } from "@/lib/db";
@@ -33,37 +32,56 @@ function ViewAll({ to, label }: { to: "/products" | "/offers" | "/categories"; l
 function Index() {
   const { t } = useLang();
   const [products, setProducts] = useState<StoreProduct[]>([]);
+  const [productsLoading, setProductsLoading] = useState(true);
 
   useEffect(() => {
-    listStoreProducts().then(setProducts).catch((error) => console.error("Home products failed:", error));
+    let alive = true;
+    listStoreProducts()
+      .then((data) => { if (alive) setProducts(data); })
+      .catch((error) => console.error("Home products failed:", error))
+      .finally(() => { if (alive) setProductsLoading(false); });
+    return () => { alive = false; };
   }, []);
 
-  const featured = products.filter((p) => p.tags.includes("featured"));
   const best = products.filter((p) => p.tags.includes("best"));
   const newest = products.filter((p) => p.tags.includes("new"));
 
   return (
     <>
       <HeroSlider />
-      <FindYourPhone products={products} />
-      <HomeProductShowcase products={products} />
-      <HomeProductImageSlider products={products} />
-      <CustomerShoppingAssistant products={products} />
-      <FeatureStrip />
-      <Section title={t("home.categories")} subtitle={t("home.categories.sub")} action={<ViewAll to="/categories" label={t("home.viewAll")} />}>
+      <Section title={t("home.categories")} action={<ViewAll to="/categories" label={t("home.viewAll")} />}>
         <CategoryGrid />
       </Section>
-      <Section title={t("home.featured")} action={<ViewAll to="/products" label={t("home.viewAll")} />}>
-        {featured.length ? <ProductGrid products={featured} /> : <p className="py-10 text-center text-sm text-subtle">لا توجد منتجات مميزة حاليًا.</p>}
-      </Section>
+      <div className="mx-auto grid max-w-7xl gap-5 px-4 py-2 sm:px-6 lg:grid-cols-2">
+        <FindYourPhone products={products} />
+        <Stats />
+      </div>
+      <HomeProductShowcase products={products} />
+      <FeatureStrip />
       <CustomerReviews />
-      <Stats />
       <Section title={t("home.best")} action={<ViewAll to="/products" label={t("home.viewAll")} />}>
-        {best.length ? <ProductGrid products={best} /> : <p className="py-10 text-center text-sm text-subtle">لا توجد منتجات حاليًا.</p>}
+        {productsLoading ? <ProductSectionSkeleton /> : best.length ? <ProductGrid products={best} /> : <p className="py-10 text-center text-sm text-subtle">لا توجد منتجات حاليًا.</p>}
       </Section>
       <Section title={t("home.new")} action={<ViewAll to="/offers" label={t("home.viewAll")} />}>
-        {newest.length ? <ProductGrid products={newest} /> : <p className="py-10 text-center text-sm text-subtle">لا توجد منتجات جديدة حاليًا.</p>}
+        {productsLoading ? <ProductSectionSkeleton /> : newest.length ? <ProductGrid products={newest} /> : <p className="py-10 text-center text-sm text-subtle">لا توجد منتجات جديدة حاليًا.</p>}
       </Section>
     </>
+  );
+}
+
+function ProductSectionSkeleton() {
+  return (
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+      {Array.from({ length: 4 }).map((_, index) => (
+        <div key={index} className="overflow-hidden rounded-2xl border border-border bg-card">
+          <div className="aspect-[4/5] animate-pulse bg-muted" />
+          <div className="space-y-3 p-4">
+            <div className="h-4 w-3/4 animate-pulse rounded bg-muted" />
+            <div className="h-4 w-1/2 animate-pulse rounded bg-muted" />
+            <div className="h-6 w-1/3 animate-pulse rounded bg-muted" />
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
