@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Minus, Plus, Trash2, MapPin, Phone, User, MessageCircle, X, CheckCircle2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useCart } from "@/lib/cart";
-import { createStoreOrder, listShippingRates, type ShippingRate } from "@/lib/db";
+import { createStoreOrder, getStoreWhatsAppNumber, listShippingRates, type ShippingRate } from "@/lib/db";
 import { useLang } from "@/lib/i18n";
 
 export const Route = createFileRoute("/cart")({
@@ -16,8 +16,6 @@ const GOVERNORATES = [
   "المنيا", "أسيوط", "سوهاج", "قنا", "الأقصر", "أسوان", "البحر الأحمر", "مطروح", "الوادي الجديد", "شمال سيناء", "جنوب سيناء",
 ];
 
-// SODFA store WhatsApp number (Egypt country code, without the leading 0).
-const STORE_WHATSAPP_NUMBER = "201093384952";
 
 function CartPage() {
   const { t, price } = useLang();
@@ -47,9 +45,9 @@ function CartPage() {
       return;
     }
 
-    const whatsappNumber = STORE_WHATSAPP_NUMBER;
-
     try {
+      const whatsappNumber = await getStoreWhatsAppNumber();
+      if (!whatsappNumber) throw new Error("رقم واتساب استقبال الطلبات غير مضبوط من لوحة التحكم.");
       const order = await createStoreOrder({
         customer_name: name.trim(),
         customer_phone: phone.trim(),

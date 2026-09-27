@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { HeroSlider } from "@/components/HeroSlider";
 import { FeatureStrip } from "@/components/FeatureStrip";
 import { CategoryGrid } from "@/components/CategoryGrid";
@@ -10,7 +10,8 @@ import { FindYourPhone } from "@/components/FindYourPhone";
 import { HomeProductShowcase } from "@/components/HomeProductShowcase";
 import { CustomerReviews } from "@/components/CustomerReviews";
 import { useLang } from "@/lib/i18n";
-import { listStoreProducts, type StoreProduct } from "@/lib/db";
+import { listModels, listSeries, listStoreProducts, type DbModel, type DbSeries, type StoreProduct } from "@/lib/db";
+import { DeviceFilter } from "@/components/DeviceFilter";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -32,12 +33,16 @@ function ViewAll({ to, label }: { to: "/products" | "/offers" | "/categories"; l
 function Index() {
   const { t } = useLang();
   const [products, setProducts] = useState<StoreProduct[]>([]);
+  const [models, setModels] = useState<DbModel[]>([]);
+  const [series, setSeries] = useState<DbSeries[]>([]);
+  const [selectedSeries, setSelectedSeries] = useState<string | undefined>();
+  const [selectedModel, setSelectedModel] = useState<string | undefined>();
   const [productsLoading, setProductsLoading] = useState(true);
 
   useEffect(() => {
     let alive = true;
-    listStoreProducts()
-      .then((data) => { if (alive) setProducts(data); })
+    Promise.all([listStoreProducts(), listModels(), listSeries()])
+      .then(([data, modelData, seriesData]) => { if (alive) { setProducts(data); setModels(modelData); setSeries(seriesData); } })
       .catch((error) => console.error("Home products failed:", error))
       .finally(() => { if (alive) setProductsLoading(false); });
     return () => { alive = false; };
@@ -45,6 +50,13 @@ function Index() {
 
   const best = products.filter((p) => p.tags.includes("best"));
   const newest = products.filter((p) => p.tags.includes("new"));
+  const modelIds = useMemo(() => {
+    const ids = new Set<string>();
+    products.forEach((p) => { if (p.modelId) ids.add(p.modelId); p.variants.forEach((v) => v.modelId && ids.add(v.modelId)); });
+    return ids;
+  }, [products]);
+  const filteredBest = useMemo(() => best.filter((p) => { const ids = new Set(models.filter(m => m.series_id === selectedSeries).map(m => m.id)); const okSeries = !selectedSeries || (p.modelId ? ids.has(p.modelId) : false) || p.variants.some(v => v.modelId ? ids.has(v.modelId) : false); const okModel = !selectedModel || p.modelId === selectedModel || p.variants.some(v => v.modelId === selectedModel); return okSeries && okModel; }), [best, models, selectedSeries, selectedModel]);
+  const filteredNewest = useMemo(() => newest.filter((p) => { const ids = new Set(models.filter(m => m.series_id === selectedSeries).map(m => m.id)); const okSeries = !selectedSeries || (p.modelId ? ids.has(p.modelId) : false) || p.variants.some(v => v.modelId ? ids.has(v.modelId) : false); const okModel = !selectedModel || p.modelId === selectedModel || p.variants.some(v => v.modelId === selectedModel); return okSeries && okModel; }), [newest, models, selectedSeries, selectedModel]);
 
   return (
     <>
@@ -59,11 +71,14 @@ function Index() {
       <HomeProductShowcase products={products} />
       <FeatureStrip />
       <CustomerReviews />
+      <div className="mx-auto max-w-7xl px-4 pt-4 sm:px-6">
+        <DeviceFilter series={series} models={models} selectedSeriesId={selectedSeries} selectedModelId={selectedModel} onSeriesSelect={(id) => { setSelectedSeries(id); setSelectedModel(undefined); }} onModelSelect={setSelectedModel} productModelIds={modelIds} />
+      </div>
       <Section title={t("home.best")} action={<ViewAll to="/products" label={t("home.viewAll")} />}>
-        {productsLoading ? <ProductSectionSkeleton /> : best.length ? <ProductGrid products={best} /> : <p className="py-10 text-center text-sm text-subtle">لا توجد منتجات حاليًا.</p>}
+        {productsLoading ? <ProductSectionSkeleton /> : filteredBest.length ? <ProductGrid products={filteredBest} /> : <p className="py-10 text-center text-sm text-subtle">لا توجد منتجات حاليًا.</p>}
       </Section>
       <Section title={t("home.new")} action={<ViewAll to="/offers" label={t("home.viewAll")} />}>
-        {productsLoading ? <ProductSectionSkeleton /> : newest.length ? <ProductGrid products={newest} /> : <p className="py-10 text-center text-sm text-subtle">لا توجد منتجات جديدة حاليًا.</p>}
+        {productsLoading ? <ProductSectionSkeleton /> : filteredNewest.length ? <ProductGrid products={filteredNewest} /> : <p className="py-10 text-center text-sm text-subtle">لا توجد منتجات جديدة حاليًا.</p>}
       </Section>
     </>
   );

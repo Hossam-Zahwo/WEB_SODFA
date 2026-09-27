@@ -10,6 +10,16 @@ export type DbCategory = {
   created_at?: string;
 };
 
+export type DbSeries = {
+  id: string;
+  slug: string;
+  name_ar: string;
+  name_en: string;
+  image_url: string | null;
+  storage_path?: string | null;
+  created_at?: string;
+};
+
 export type DbModel = {
   id: string;
   slug: string;
@@ -17,6 +27,7 @@ export type DbModel = {
   name_en: string;
   image_url: string | null;
   storage_path?: string | null;
+  series_id?: string | null;
   created_at?: string;
 };
 
@@ -197,10 +208,19 @@ export async function listCategories() {
   return (data ?? []) as DbCategory[];
 }
 
+export async function listSeries() {
+  const { data, error } = await supabase
+    .from("product_series")
+    .select("id,slug,name_ar,name_en,image_url,storage_path,created_at")
+    .order("name_ar");
+  if (error) throw error;
+  return (data ?? []) as DbSeries[];
+}
+
 export async function listModels() {
   const { data, error } = await supabase
     .from("product_models")
-    .select("id,slug,name_ar,name_en,image_url,storage_path,created_at")
+    .select("id,slug,name_ar,name_en,image_url,storage_path,series_id,created_at")
     .order("name_ar");
   if (error) throw error;
   return (data ?? []) as DbModel[];
@@ -457,7 +477,7 @@ export async function getStoreProduct(slug: string): Promise<StoreProduct | null
       : Promise.resolve({ data: null, error: null } as any),
     listProductVariants([product.id]),
     listProductImages([product.id]),
-    product.model_id ? supabase.from("product_models").select("id,slug,name_ar,name_en,image_url,storage_path,created_at").eq("id", product.model_id).maybeSingle() : Promise.resolve({ data: null, error: null } as any),
+    product.model_id ? supabase.from("product_models").select("id,slug,name_ar,name_en,image_url,storage_path,series_id,created_at").eq("id", product.model_id).maybeSingle() : Promise.resolve({ data: null, error: null } as any),
   ]);
 
   if (variantsResult.status === "rejected") throw variantsResult.reason;
@@ -469,6 +489,31 @@ export async function getStoreProduct(slug: string): Promise<StoreProduct | null
   const ratings = await listProductRatingSummary([product.id]);
   const model = modelResult.status === "fulfilled" ? (modelResult.value?.data as DbModel | null) ?? undefined : undefined;
   return toStoreProduct(product, category, variantsResult.value, imagesResult.value, ratings.get(product.id), model);
+}
+
+export const DEFAULT_STORE_WHATSAPP_NUMBER = "";
+
+export function normalizeEgyptWhatsAppNumber(value: string) {
+  const digits = String(value || "").replace(/\D/g, "");
+  if (!digits) return "";
+  if (digits.startsWith("20")) return digits;
+  if (digits.startsWith("0")) return `20${digits.slice(1)}`;
+  if (digits.startsWith("1") && digits.length === 10) return `20${digits}`;
+  return digits;
+}
+
+export async function getStoreWhatsAppNumber() {
+  const { data, error } = await supabase
+    .from("store_settings")
+    .select("value")
+    .eq("key", "whatsapp_order_number")
+    .maybeSingle();
+  if (error) {
+    // Older databases can run the storefront before the optional settings migration.
+    // Keep checkout usable until the admin runs the migration.
+    throw error;
+  }
+  return normalizeEgyptWhatsAppNumber(data?.value || "") || DEFAULT_STORE_WHATSAPP_NUMBER;
 }
 
 export type ShippingRate = {

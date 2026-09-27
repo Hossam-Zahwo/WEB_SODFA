@@ -193,3 +193,12 @@
     min-width: 0;
   }
 }
+
+
+/* Product pages: prevent long Arabic/English names and controls from overflowing small screens. */
+.sodfa-product-page,
+.sodfa-product-page * { min-width: 0; }
+@media (max-width: 380px) {
+  .sodfa-product-page .product-gallery-arrow { width: 2.25rem; height: 2.25rem; }
+  .sodfa-product-page .product-buy-row { grid-template-columns: minmax(0, auto) minmax(0, 1fr); }
+}

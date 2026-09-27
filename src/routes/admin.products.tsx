@@ -375,6 +375,7 @@ function ProductsAdmin() {
     try {
       const generatedSlug = await makeUniqueSlug(form.slug || form.name_en, editing);
       if (!generatedSlug) throw new Error("اكتب الاسم الإنجليزي أو الـ Slug.");
+      if (!form.model_id) throw new Error("اختيار موديل المنتج مطلوب. أنشئ السلسلة والموديل أولًا.");
 
       const payload: any = {
         slug: generatedSlug,
@@ -715,7 +716,7 @@ function ProductsAdmin() {
                       <Field label="لون المنتج"><Input value={form.color} placeholder="مثال: أسود أو #000000" onChange={(e) => setForm({ ...form, color: e.target.value })}/></Field>
                       <div className="grid gap-4 sm:grid-cols-2">
                         <Field label="التصنيف"><select value={form.category_id} onChange={(e) => setForm({ ...form, category_id: e.target.value })} className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm"><option value="">بدون تصنيف</option>{cats.map((c) => <option key={c.id} value={c.id}>{c.name_ar}</option>)}</select></Field>
-                        <Field label="الموديل"><select value={form.model_id} onChange={(e) => setForm({ ...form, model_id: e.target.value })} className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm"><option value="">بدون موديل</option>{models.map((m) => <option key={m.id} value={m.id}>{m.name_ar} / {m.name_en}</option>)}</select></Field>
+                        <Field label="الموديل *"><select required value={form.model_id} onChange={(e) => setForm({ ...form, model_id: e.target.value })} className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm"><option value="">بدون موديل</option>{models.map((m) => <option key={m.id} value={m.id}>{m.name_ar} / {m.name_en}</option>)}</select></Field>
                       </div>
                       <Field label="Slug"><Input value={form.slug} placeholder="premium-iphone-case" onChange={(e) => setForm({ ...form, slug: slugify(e.target.value) })}/></Field>
                       <div className="grid gap-4 sm:grid-cols-2">

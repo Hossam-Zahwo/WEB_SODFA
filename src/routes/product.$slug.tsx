@@ -109,19 +109,19 @@ function ProductPage() {
 
   return (
     <>
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
+      <div className="sodfa-product-page mx-auto w-full max-w-7xl px-3 py-6 sm:px-6 sm:py-12">
         <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
           <div
             onMouseEnter={() => setPaused(true)}
             onMouseLeave={() => setPaused(false)}
             className="min-w-0"
           >
-            <div className="relative overflow-hidden rounded-3xl border border-border bg-white">
+            <div className="relative aspect-square w-full overflow-hidden rounded-3xl border border-border bg-white">
               <SmartImage src={gallery[img] || "/placeholder.svg"} alt={pick(product.name.ar, product.name.en)} priority ratio="square" imgClassName="object-contain p-2 sm:p-4" />
               {off > 0 && <span className="bg-sodfa absolute start-4 top-4 z-10 rounded-full px-3 py-1 text-xs font-bold text-primary-foreground">{off}% {t("product.off")}</span>}
               {gallery.length > 1 && <>
-                <button type="button" aria-label="previous" onClick={() => setImg((i) => (i - 1 + gallery.length) % gallery.length)} className="absolute start-3 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-background/70 backdrop-blur"><ChevronLeft size={18}/></button>
-                <button type="button" aria-label="next" onClick={() => setImg((i) => (i + 1) % gallery.length)} className="absolute end-3 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-background/70 backdrop-blur"><ChevronRight size={18}/></button>
+                <button type="button" aria-label="previous" onClick={() => setImg((i) => (i - 1 + gallery.length) % gallery.length)} className="product-gallery-arrow absolute start-3 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-background/70 backdrop-blur"><ChevronLeft size={18}/></button>
+                <button type="button" aria-label="next" onClick={() => setImg((i) => (i + 1) % gallery.length)} className="product-gallery-arrow absolute end-3 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-background/70 backdrop-blur"><ChevronRight size={18}/></button>
                 <div className="absolute bottom-3 start-1/2 flex -translate-x-1/2 gap-1.5 rounded-full bg-background/60 px-2 py-1 backdrop-blur">{gallery.map((_, i) => <button key={i} type="button" aria-label={`image ${i + 1}`} onClick={() => setImg(i)} className={cn("h-1.5 rounded-full transition-all", i === img ? "w-7 bg-white" : "w-2 bg-white/45")}/>)}</div>
               </>}
             </div>
@@ -133,7 +133,7 @@ function ProductPage() {
               {selectedVariant && <span className="flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[11px] text-primary-light"><Layers3 size={12}/> {variantLabel(selectedVariant)}</span>}
               <span className="rounded-full border border-border px-3 py-1 text-[11px] text-subtle">{product.category || "SODFA"}</span>
             </div>
-            <h1 className="mt-4 text-2xl font-bold sm:text-4xl">{activeName}</h1>
+            <h1 className="mt-4 break-words text-2xl font-bold leading-tight sm:text-4xl">{activeName}</h1>
             {activeModelName && <div className="mt-2 flex items-center gap-2 text-sm text-subtle">{!selectedVariant && product.model?.image && <SmartImage src={product.model.image} alt="" className="h-8 w-8 rounded-md" ratio="square" imgClassName="object-contain bg-white"/>}<span>{activeModelName}</span></div>}
             {selectedVariant && <p className="mt-2 text-sm text-subtle">{variantLabel(selectedVariant)}</p>}
             <div className="mt-4 flex flex-wrap items-baseline gap-3">
@@ -163,9 +163,9 @@ function ProductPage() {
 
             {product.colors.length > 0 && !selectedVariant && <div className="mt-7"><span className="text-xs tracking-widest text-subtle uppercase">{t("product.colors")}</span><div className="mt-3 flex flex-wrap gap-2">{product.colors.map((c) => <span key={`${c.name.en}-${c.hex}`} className="flex items-center gap-2 rounded-full border border-border px-3 py-2 text-xs"><span className="h-4 w-4 rounded-full border" style={{ backgroundColor: c.hex }}/>{pick(c.name.ar, c.name.en)}</span>)}</div></div>}
 
-            <div className="mt-8 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3">
+            <div className="product-buy-row mt-8 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 sm:gap-3">
               <div className="flex h-12 items-center gap-1 rounded-xl border border-border bg-input px-2"><button type="button" aria-label="-" onClick={() => setQty((q) => Math.max(1, q - 1))} className="grid h-8 w-8 place-items-center"><Minus className="h-4 w-4"/></button><span className="w-8 text-center text-sm">{qty}</span><button type="button" aria-label="+" onClick={() => setQty((q) => q + 1)} className="grid h-8 w-8 place-items-center"><Plus className="h-4 w-4"/></button></div>
-              <button type="button" onClick={onAdd} disabled={!activeInStock} className="bg-sodfa flex h-12 items-center justify-center gap-2 rounded-xl px-6 text-sm font-semibold text-primary-foreground disabled:opacity-40">{added ? <Check className="h-4 w-4"/> : <Plus className="h-4 w-4"/>}{added ? t("product.added") : t("product.addToCart")}</button>
+              <button type="button" onClick={onAdd} disabled={!activeInStock} className="bg-sodfa flex h-12 min-w-0 items-center justify-center gap-2 rounded-xl px-3 text-center text-xs font-semibold text-primary-foreground disabled:opacity-40 sm:px-6 sm:text-sm">{added ? <Check className="h-4 w-4"/> : <Plus className="h-4 w-4"/>}{added ? t("product.added") : t("product.addToCart")}</button>
             </div>
 
             <div className="mt-8 grid gap-4 border-t border-border pt-6 sm:grid-cols-2"><div className="flex items-start gap-3"><span className="bg-sodfa grid h-9 w-9 place-items-center rounded-full text-primary-foreground"><Truck className="h-4 w-4"/></span><span><span className="block text-sm font-medium">{t("feat.1.t")}</span><span className="block text-xs text-subtle">{t("feat.1.s")}</span></span></div><div className="flex items-start gap-3"><span className="bg-sodfa grid h-9 w-9 place-items-center rounded-full text-primary-foreground"><ShieldCheck className="h-4 w-4"/></span><span><span className="block text-sm font-medium">{t("hero.b2.t")}</span><span className="block text-xs text-subtle">{t("hero.b2.s")}</span></span></div></div>

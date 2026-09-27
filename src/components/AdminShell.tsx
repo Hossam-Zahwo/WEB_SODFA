@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { LayoutDashboard, Package, Tags, ShoppingCart, MessageSquareHeart, LogOut, Store, Menu, X, Boxes } from "lucide-react";
+import { LayoutDashboard, Package, Tags, ShoppingCart, MessageSquareHeart, LogOut, Store, Menu, X, Boxes, Layers } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -9,6 +9,7 @@ const nav = [
   { to: "/admin", label: "الرئيسية", icon: LayoutDashboard },
   { to: "/admin/products", label: "المنتجات", icon: Package },
   { to: "/admin/categories", label: "التصنيفات", icon: Tags },
+  { to: "/admin/series", label: "السلاسل", icon: Layers },
   { to: "/admin/models", label: "الموديلات", icon: Boxes },
   { to: "/admin/orders", label: "الطلبات", icon: ShoppingCart },
   { to: "/admin/reviews", label: "تقييمات العملاء", icon: MessageSquareHeart },
