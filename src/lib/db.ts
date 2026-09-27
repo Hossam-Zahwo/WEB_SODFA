@@ -503,15 +503,10 @@ export function normalizeEgyptWhatsAppNumber(value: string) {
 }
 
 export async function getStoreWhatsAppNumber() {
-  const { data, error } = await supabase
-    .from("settings")
-    .select("value")
-    .eq("key", "whatsapp_number")
-    .maybeSingle();
-  if (error) {
-    throw error;
-  }
-  return normalizeEgyptWhatsAppNumber(data?.value || "") || DEFAULT_STORE_WHATSAPP_NUMBER;
+  // Customer orders always go to the store's dedicated WhatsApp number.
+  // Do not query settings here because the current SODFA settings schema
+  // does not expose a generic `value` column.
+  return DEFAULT_STORE_WHATSAPP_NUMBER;
 }
 
 export type ShippingRate = {
