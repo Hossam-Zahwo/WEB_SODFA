@@ -97,8 +97,8 @@ function ProductPage() {
             onMouseLeave={() => setPaused(false)}
             className="min-w-0"
           >
-            <div className="relative overflow-hidden rounded-3xl border border-border bg-card">
-              <SmartImage src={gallery[img] || "/placeholder.svg"} alt={pick(product.name.ar, product.name.en)} priority ratio="square" />
+            <div className="relative overflow-hidden rounded-3xl border border-border bg-white">
+              <SmartImage src={gallery[img] || "/placeholder.svg"} alt={pick(product.name.ar, product.name.en)} priority ratio="square" imgClassName="object-contain p-2 sm:p-4" />
               {off > 0 && <span className="bg-sodfa absolute start-4 top-4 z-10 rounded-full px-3 py-1 text-xs font-bold text-primary-foreground">{off}% {t("product.off")}</span>}
               {gallery.length > 1 && <>
                 <button type="button" aria-label="previous" onClick={() => setImg((i) => (i - 1 + gallery.length) % gallery.length)} className="absolute start-3 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-background/70 backdrop-blur"><ChevronLeft size={18}/></button>
@@ -107,7 +107,6 @@ function ProductPage() {
               </>}
             </div>
             {gallery.length > 1 && <div className="mt-3 grid grid-cols-5 gap-2">{gallery.slice(0, 10).map((src, i) => <button type="button" key={`${src}-${i}`} onClick={() => setImg(i)} className={cn("overflow-hidden rounded-xl border", i === img ? "border-primary ring-2 ring-primary/20" : "border-border")}><SmartImage src={src} alt="" ratio="square"/></button>)}</div>}
-            <p className="mt-2 text-center text-[11px] text-subtle">السلايدر يتحرك تلقائيًا ويتوقف عند تثبيت المؤشر عليه.</p>
           </div>
 
           <div className="min-w-0">
@@ -117,13 +116,13 @@ function ProductPage() {
             </div>
             <h1 className="mt-4 text-2xl font-bold sm:text-4xl">{selectedVariant?.name || pick(product.name.ar, product.name.en)}</h1>
             {selectedVariant && <p className="mt-2 text-sm text-subtle">{pick(product.name.ar, product.name.en)} — نسخة/تفريعة من المنتج الرئيسي</p>}
-            <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-subtle">
-              {(selectedVariant?.sku || product.sku) && <span>SKU: {selectedVariant?.sku || product.sku}</span>}
-              {(selectedVariant?.barcode || product.barcode) && <span>باركود: {selectedVariant?.barcode || product.barcode}</span>}
-            </div>
             <div className="mt-4 flex flex-wrap items-baseline gap-3">
-              <span className="text-2xl font-bold">{price(activePrice)}</span>
-              {activeOldPrice && <span className="text-sm text-subtle line-through">{price(activeOldPrice)}</span>}
+              {activeInStock && (
+                <>
+                  <span className="text-2xl font-bold">{price(activePrice)}</span>
+                  {activeOldPrice && <span className="text-sm text-subtle line-through">{price(activeOldPrice)}</span>}
+                </>
+              )}
               <span className="rounded-full border px-3 py-1 text-xs">{activeInStock ? t("product.inStock") : t("product.outStock")}</span>
             </div>
             <p className="mt-5 text-sm leading-relaxed text-muted-foreground">{pick(product.description.ar, product.description.en)}</p>
@@ -133,10 +132,10 @@ function ProductPage() {
                 <div className="flex items-center justify-between"><span className="text-xs tracking-widest text-subtle uppercase">اختيارات المنتج</span><span className="text-[11px] text-subtle">{product.variants.length} اختيار</span></div>
                 <div className="mt-3 grid gap-2 sm:grid-cols-2">
                   <button type="button" onClick={() => setSelectedVariantId(undefined)} className={cn("flex items-center gap-3 rounded-xl border p-3 text-start", !selectedVariant ? "border-primary bg-primary/10" : "border-border")}>
-                    <SmartImage src={product.images[0] || "/placeholder.svg"} alt="" className="h-12 w-12 shrink-0 rounded-lg" ratio="square"/><span><span className="block text-sm font-semibold">{pick(product.name.ar, product.name.en)}</span><span className="text-xs text-subtle">{price(product.price)}</span></span>
+                    <SmartImage src={product.images[0] || "/placeholder.svg"} alt="" className="h-12 w-12 shrink-0 rounded-lg" ratio="square"/><span><span className="block text-sm font-semibold">{pick(product.name.ar, product.name.en)}</span>{product.inStock && <span className="text-xs text-subtle">{price(product.price)}</span>}</span>
                   </button>
                   {product.variants.map((v) => <button type="button" key={v.id} onClick={() => chooseVariant(v)} className={cn("flex items-center gap-3 rounded-xl border p-3 text-start", selectedVariant?.id === v.id ? "border-primary bg-primary/10" : "border-border")}>
-                    <SmartImage src={v.primaryImage} alt="" className="h-12 w-12 shrink-0 rounded-lg" ratio="square"/><span className="min-w-0"><span className="block truncate text-sm font-semibold">{v.name}</span><span className="text-xs text-subtle">{price(v.price)}</span></span>
+                    <SmartImage src={v.primaryImage} alt="" className="h-12 w-12 shrink-0 rounded-lg" ratio="square"/><span className="min-w-0"><span className="block truncate text-sm font-semibold">{v.name}</span>{v.inStock && <span className="text-xs text-subtle">{price(v.price)}</span>}</span>
                   </button>)}
                 </div>
               </div>

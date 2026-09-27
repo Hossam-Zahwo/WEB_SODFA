@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { ImagePlus, Plus, Trash2, Pencil, Upload, X } from "lucide-react";
+import { ImagePlus, Plus, Trash2, Pencil, Upload, X, GripVertical } from "lucide-react";
 import { AdminGuard } from "@/components/AdminGuard";
 import { AdminPage } from "@/components/AdminShell";
 import { supabase } from "@/lib/supabase";
@@ -19,7 +19,7 @@ function slugify(value: string) {
 
 function CategoriesAdmin() {
   const [items, setItems] = useState<DbCategory[]>([]);
-  const [form, setForm] = useState({ slug: "", name_ar: "", name_en: "", image_url: "" });
+  const [form, setForm] = useState({ slug: "", name_ar: "", name_en: "", image_url: "", keywords: [] as string[] });
   const [editing, setEditing] = useState<string | null>(null);
   const [show, setShow] = useState(false);
   const [error, setError] = useState("");
@@ -61,7 +61,7 @@ function CategoriesAdmin() {
       if (!slug) throw new Error("اكتب الاسم الإنجليزي أو الـ Slug أولًا.");
       if (!form.name_ar.trim() || !form.name_en.trim()) throw new Error("الاسم العربي والإنجليزي مطلوبان.");
 
-      const basePayload = { slug, name_ar: form.name_ar.trim(), name_en: form.name_en.trim() };
+      const basePayload = { slug, name_ar: form.name_ar.trim(), name_en: form.name_en.trim(), keywords: form.keywords };
       let categoryId = editing;
 
       if (editing) {
@@ -83,7 +83,7 @@ function CategoriesAdmin() {
       setShow(false);
       setEditing(null);
       setImageFile(null);
-      setForm({ slug: "", name_ar: "", name_en: "", image_url: "" });
+      setForm({ slug: "", name_ar: "", name_en: "", image_url: "", keywords: [] });
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "حدث خطأ أثناء حفظ القسم");
@@ -97,11 +97,11 @@ function CategoriesAdmin() {
   };
 
   const openNew = () => {
-    setEditing(null); setImageFile(null); setForm({ slug: "", name_ar: "", name_en: "", image_url: "" }); setShow(true); setError("");
+    setEditing(null); setImageFile(null); setForm({ slug: "", name_ar: "", name_en: "", image_url: "", keywords: [] }); setShow(true); setError("");
   };
 
   const openEdit = (c: DbCategory) => {
-    setEditing(c.id); setImageFile(null); setForm({ slug: c.slug, name_ar: c.name_ar, name_en: c.name_en, image_url: c.image_url ?? "" }); setShow(true); setError("");
+    setEditing(c.id); setImageFile(null); setForm({ slug: c.slug, name_ar: c.name_ar, name_en: c.name_en, image_url: c.image_url ?? "", keywords: c.keywords ?? [] }); setShow(true); setError("");
   };
 
   const clearImage = () => { setImageFile(null); setForm((current) => ({ ...current, image_url: "" })); if (fileRef.current) fileRef.current.value = ""; };
@@ -114,6 +114,15 @@ function CategoriesAdmin() {
       <Field label="الاسم بالعربي"><Input required value={form.name_ar} onChange={e => setForm({ ...form, name_ar: e.target.value })}/></Field>
       <Field label="English name"><Input required value={form.name_en} onChange={e => setForm({ ...form, name_en: e.target.value })}/></Field>
       <Field label="Slug"><Input value={form.slug} placeholder="phone-cases" onChange={e => setForm({ ...form, slug: slugify(e.target.value) })}/></Field>
+
+      <div className="md:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <div className="mb-2 flex items-center gap-2 text-sm font-semibold"><GripVertical size={17}/> الكلمات المفتاحية للقسم</div>
+        <p className="mb-3 text-xs text-slate-500">أضف كلمات مرتبطة بالقسم. اكتب كلمة واضغط Enter، ويمكن سحبها لتغيير ترتيبها.</p>
+        <div className="mb-3 flex flex-wrap gap-2">
+          {form.keywords.map((keyword, index) => <button key={`${keyword}-${index}`} type="button" draggable onDragStart={(e) => e.dataTransfer.setData("text/plain", String(index))} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); const from = Number(e.dataTransfer.getData("text/plain")); if (!Number.isInteger(from)) return; setForm((f) => { const next = [...f.keywords]; const [item] = next.splice(from,1); next.splice(index,0,item); return { ...f, keywords: next }; }); }} onClick={() => setForm((f) => ({ ...f, keywords: f.keywords.filter((_, i) => i !== index) }))} className="rounded-full bg-white px-3 py-1.5 text-xs font-bold shadow-sm ring-1 ring-slate-200">{keyword} ×</button>)}
+        </div>
+        <Input placeholder="مثال: جرابات، iPhone، كفرات، حماية شاشة..." onKeyDown={(e) => { if (e.key !== "Enter") return; e.preventDefault(); const value = e.currentTarget.value.trim(); if (!value) return; setForm((f) => f.keywords.includes(value) ? f : { ...f, keywords: [...f.keywords, value] }); e.currentTarget.value = ""; }}/>
+      </div>
 
       <div className="md:col-span-2">
         <div className="mb-2 flex items-center gap-2 text-sm font-semibold"><ImagePlus size={17} className="text-primary"/> صورة القسم</div>

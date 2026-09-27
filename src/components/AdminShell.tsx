@@ -21,20 +21,20 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div dir="rtl" className="sodfa-admin-shell min-h-screen bg-background text-foreground">
-      <button className="fixed right-4 top-4 z-50 rounded-lg border border-slate-700 bg-slate-900 p-2 lg:hidden" onClick={() => setOpen(!open)} aria-label="القائمة">
+      <button className="fixed right-4 top-4 z-50 rounded-lg border border-slate-200 bg-white p-2 text-black lg:hidden" onClick={() => setOpen(!open)} aria-label="القائمة">
         {open ? <X size={20}/> : <Menu size={20}/>}
       </button>
-      <aside className={`fixed inset-y-0 right-0 z-40 w-72 border-l border-slate-800 bg-slate-900 p-5 transition-transform lg:translate-x-0 ${open ? "translate-x-0" : "translate-x-full"}`}>
+      <aside className={`fixed inset-y-0 right-0 z-40 w-72 border-l border-slate-200 bg-white p-5 text-black shadow-xl transition-transform lg:translate-x-0 ${open ? "translate-x-0" : "translate-x-full"}`}>
         <div className="mb-8 flex items-center justify-between">
           <div><div className="text-xl font-extrabold">SODFA</div><div className="text-xs text-slate-400">لوحة التحكم</div></div>
-          <Store className="text-slate-400"/>
+          <Store className="text-black"/>
         </div>
         <nav className="space-y-2">
-          {nav.map(({to,label,icon:Icon}) => <Link key={to} to={to as any} onClick={() => setOpen(false)} className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold ${location.pathname === to ? "bg-white text-slate-950" : "text-slate-300 hover:bg-slate-800"}`}><Icon size={19}/>{label}</Link>)}
+          {nav.map(({to,label,icon:Icon}) => <Link key={to} to={to as any} onClick={() => setOpen(false)} className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-black ${location.pathname === to ? "bg-slate-100" : "hover:bg-slate-100"}`}><Icon size={19}/>{label}</Link>)}
         </nav>
         <div className="absolute bottom-5 left-5 right-5 space-y-2">
-          <Link to="/" className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-slate-300 hover:bg-slate-800"><Store size={18}/>المتجر</Link>
-          <Button variant="outline" className="w-full border-slate-700 bg-transparent text-slate-200 hover:bg-slate-800" onClick={logout}><LogOut size={18}/>تسجيل الخروج</Button>
+          <Link to="/" className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-black hover:bg-slate-100"><Store size={18}/>المتجر</Link>
+          <Button variant="outline" className="w-full border-slate-200 bg-white text-black hover:bg-slate-100" onClick={logout}><LogOut size={18}/>تسجيل الخروج</Button>
         </div>
       </aside>
       <main className="min-h-screen lg:mr-72"><div className="mx-auto max-w-7xl p-5 pt-20 lg:p-8">{children}</div></main>

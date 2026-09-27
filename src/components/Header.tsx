@@ -84,7 +84,6 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
       <div className="relative mx-auto grid h-16 max-w-7xl grid-cols-[auto_1fr_auto] items-center gap-3 px-4 sm:px-6">
-
         {/* SODFA Logo */}
         <Link
           to="/"
@@ -98,16 +97,32 @@ export function Header() {
           />
         </Link>
 
+        {/* Desktop Navigation */}
         <nav className="hidden min-w-0 items-center justify-center gap-7 text-sm md:flex">
           {links.map((l) => (
             <Link
               key={l.to}
               to={l.to}
               activeOptions={{ exact: l.to === "/" }}
-              className="text-muted-foreground transition-colors hover:text-foreground"
-              activeProps={{ className: "text-foreground" }}
+              className={cn(
+                "group relative py-2 text-muted-foreground transition-colors duration-300 ease-out",
+                "hover:text-foreground",
+              )}
+              activeProps={{
+                className:
+                  "group relative py-2 text-foreground transition-colors duration-300 ease-out",
+              }}
             >
-              {l.label}
+              <span className="relative z-10">{l.label}</span>
+
+              {/* Animated underline - centered in both RTL and LTR */}
+              <span
+                className={cn(
+                  "pointer-events-none absolute bottom-0 left-1/2 h-[2px] w-0 -translate-x-1/2 rounded-full bg-sodfa opacity-0",
+                  "transition-[width,opacity] duration-300 ease-out",
+                  "group-hover:w-full group-hover:opacity-100",
+                )}
+              />
             </Link>
           ))}
         </nav>
@@ -129,7 +144,7 @@ export function Header() {
             <ShoppingBag className="h-5 w-5" />
 
             {count > 0 && (
-              <span className="bg-sodfa absolute end-1 top-1 grid h-4 min-w-4 place-items-center rounded-full px-1 text-[10px] font-bold text-primary-foreground">
+              <span className="absolute end-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-sodfa px-1 text-[10px] font-bold text-primary-foreground">
                 {count}
               </span>
             )}
@@ -151,6 +166,7 @@ export function Header() {
         </div>
       </div>
 
+      {/* Search */}
       {searchOpen && (
         <div className="border-t border-border bg-background/95 px-4 py-3 sm:px-6">
           <form
@@ -167,7 +183,7 @@ export function Header() {
 
             <button
               type="submit"
-              className="bg-sodfa h-11 shrink-0 rounded-xl px-5 text-sm font-medium text-primary-foreground"
+              className="h-11 shrink-0 rounded-xl bg-sodfa px-5 text-sm font-medium text-primary-foreground"
             >
               {t("nav.search")}
             </button>
@@ -175,6 +191,7 @@ export function Header() {
         </div>
       )}
 
+      {/* Mobile Menu */}
       {menuOpen && (
         <div className="border-t border-border bg-background px-4 py-4 md:hidden">
           <nav className="flex flex-col">
@@ -182,8 +199,11 @@ export function Header() {
               <Link
                 key={l.to}
                 to={l.to}
-                className="border-b border-border py-3 text-base text-muted-foreground last:border-0"
-                activeProps={{ className: "text-foreground" }}
+                className="border-b border-border py-3 text-base text-muted-foreground transition-colors duration-300 last:border-0 hover:text-foreground"
+                activeProps={{
+                  className:
+                    "border-b border-border py-3 text-base text-foreground transition-colors duration-300 last:border-0",
+                }}
                 activeOptions={{ exact: l.to === "/" }}
               >
                 {l.label}

@@ -6,6 +6,7 @@ export type DbCategory = {
   name_ar: string;
   name_en: string;
   image_url: string | null;
+  keywords?: string[];
   created_at?: string;
 };
 
@@ -16,6 +17,7 @@ export type DbProduct = {
   name_en: string;
   description_ar: string | null;
   description_en: string | null;
+  color?: string | null;
   category_id: string | null;
   price: number;
   old_price: number | null;
@@ -117,7 +119,7 @@ export async function dashboardStats() {
 export async function listProducts() {
   const { data, error } = await supabase
     .from("products")
-    .select("id,slug,name_ar,name_en,description_ar,description_en,category_id,base_price,sale_price,final_price,stock_quantity,is_active,is_featured,is_bestseller,is_new,barcode,sku,created_at,updated_at")
+    .select("id,slug,name_ar,name_en,description_ar,description_en,color,category_id,base_price,sale_price,final_price,stock_quantity,is_active,is_featured,is_bestseller,is_new,barcode,sku,created_at,updated_at")
     .order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []).map((p: any): DbProduct => ({
@@ -127,6 +129,7 @@ export async function listProducts() {
     name_en: p.name_en || "",
     description_ar: p.description_ar ?? null,
     description_en: p.description_en ?? null,
+    color: p.color ?? null,
     category_id: p.category_id ?? null,
     price:
       Number(p.final_price) > 0
@@ -376,7 +379,7 @@ export async function getStoreProduct(slug: string): Promise<StoreProduct | null
 
   const { data: row, error } = await supabase
     .from("products")
-    .select("id,slug,name_ar,name_en,description_ar,description_en,category_id,base_price,sale_price,final_price,stock_quantity,is_active,is_featured,is_bestseller,is_new,barcode,sku,created_at,updated_at")
+    .select("id,slug,name_ar,name_en,description_ar,description_en,color,category_id,base_price,sale_price,final_price,stock_quantity,is_active,is_featured,is_bestseller,is_new,barcode,sku,created_at,updated_at")
     .eq("slug", cleanSlug)
     .maybeSingle();
   if (error) throw error;

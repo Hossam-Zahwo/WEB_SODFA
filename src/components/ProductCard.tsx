@@ -128,18 +128,16 @@ export function ProductCard({
         <div>
           <div className="line-clamp-2 text-sm font-medium sm:text-base">{displayName}</div>
           {variant && <div className="mt-1 line-clamp-1 text-[11px] text-subtle">{pick(product.name.ar, product.name.en)}</div>}
-          <div className="mt-2 flex flex-wrap gap-x-2 gap-y-0.5 text-[10px] text-subtle">
-            {(variant?.sku || product.sku) && <span>SKU: {variant?.sku || product.sku}</span>}
-            {(variant?.barcode || product.barcode) && <span>{t("product.barcode")}: {variant?.barcode || product.barcode}</span>}
-          </div>
         </div>
 
         <Rating average={product.ratingAverage} count={product.ratingCount} />
 
-        <div className="flex flex-wrap items-baseline gap-2">
-          <span className="text-base font-semibold sm:text-lg">{price(displayPrice)}</span>
-          {displayOldPrice && <span className="text-xs text-subtle line-through">{price(displayOldPrice)}</span>}
-        </div>
+        {(variant ? variant.inStock : product.inStock) && (
+          <div className="flex flex-wrap items-baseline gap-2">
+            <span className="text-base font-semibold sm:text-lg">{price(displayPrice)}</span>
+            {displayOldPrice && <span className="text-xs text-subtle line-through">{price(displayOldPrice)}</span>}
+          </div>
+        )}
 
         <div className="flex min-h-5 items-center gap-1.5">
           {variantColor ? (
