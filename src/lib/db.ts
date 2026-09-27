@@ -10,6 +10,16 @@ export type DbCategory = {
   created_at?: string;
 };
 
+export type DbModel = {
+  id: string;
+  slug: string;
+  name_ar: string;
+  name_en: string;
+  image_url: string | null;
+  storage_path?: string | null;
+  created_at?: string;
+};
+
 export type DbProduct = {
   id: string;
   slug: string;
@@ -19,6 +29,7 @@ export type DbProduct = {
   description_en: string | null;
   color?: string | null;
   category_id: string | null;
+  model_id?: string | null;
   price: number;
   old_price: number | null;
   stock: number;
@@ -39,6 +50,12 @@ export type DbProductVariant = {
   variant_name: string;
   variant_type: string | null;
   variant_value: string | null;
+  slug?: string | null;
+  category_id?: string | null;
+  model_id?: string | null;
+  is_featured?: boolean;
+  is_bestseller?: boolean;
+  is_new?: boolean;
   barcode: string | null;
   sku: string | null;
   name_ar: string | null;
@@ -75,7 +92,14 @@ export type StoreColor = {
 export type StoreVariant = {
   id: string;
   name: string;
-  value?: string;
+  nameAr?: string;
+  nameEn?: string;
+  descriptionAr?: string;
+  descriptionEn?: string;
+  slug?: string;
+  categoryId?: string | null;
+  modelId?: string | null;
+  type?: string;
   color?: string;
   price: number;
   oldPrice?: number;
@@ -95,6 +119,8 @@ export type StoreProduct = {
   description: { ar: string; en: string };
   category: string;
   categoryId: string | null;
+  modelId?: string | null;
+  model?: { ar: string; en: string; image?: string | null };
   price: number;
   oldPrice?: number;
   colors: StoreColor[];
@@ -119,7 +145,7 @@ export async function dashboardStats() {
 export async function listProducts() {
   const { data, error } = await supabase
     .from("products")
-    .select("id,slug,name_ar,name_en,description_ar,description_en,color,category_id,base_price,sale_price,final_price,stock_quantity,is_active,is_featured,is_bestseller,is_new,barcode,sku,created_at,updated_at")
+    .select("id,slug,name_ar,name_en,description_ar,description_en,color,category_id,model_id,base_price,sale_price,final_price,stock_quantity,is_active,is_featured,is_bestseller,is_new,barcode,sku,created_at,updated_at")
     .order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []).map((p: any): DbProduct => ({
@@ -131,6 +157,7 @@ export async function listProducts() {
     description_en: p.description_en ?? null,
     color: p.color ?? null,
     category_id: p.category_id ?? null,
+    model_id: p.model_id ?? null,
     price:
       Number(p.final_price) > 0
         ? Number(p.final_price)
@@ -170,6 +197,15 @@ export async function listCategories() {
   return (data ?? []) as DbCategory[];
 }
 
+export async function listModels() {
+  const { data, error } = await supabase
+    .from("product_models")
+    .select("id,slug,name_ar,name_en,image_url,storage_path,created_at")
+    .order("name_ar");
+  if (error) throw error;
+  return (data ?? []) as DbModel[];
+}
+
 /**
  * These columns are the stable variant fields used by the rebuilt SODFA schema.
  * The SQL migration shipped beside this ZIP adds the three display fields if
@@ -178,7 +214,7 @@ export async function listCategories() {
 export async function listProductVariants(productIds?: string[]) {
   let query = supabase
     .from("product_variants")
-    .select("id,product_id,sku,barcode,color,base_price,sale_price,final_price,stock_quantity,is_active,display_order,variant_name,variant_type,variant_value,created_at,updated_at")
+    .select("id,product_id,sku,barcode,color,base_price,sale_price,final_price,stock_quantity,is_active,display_order,variant_name,variant_type,variant_value,name_ar,name_en,slug,description_ar,description_en,category_id,model_id,is_featured,is_bestseller,is_new,created_at,updated_at")
     .order("display_order", { ascending: true })
     .order("created_at", { ascending: true });
   if (productIds?.length) query = query.in("product_id", productIds);
@@ -192,10 +228,16 @@ export async function listProductVariants(productIds?: string[]) {
     variant_value: v.variant_value ?? v.color ?? null,
     barcode: v.barcode ?? null,
     sku: v.sku ?? null,
-    name_ar: v.variant_name ?? null,
-    name_en: v.variant_name ?? null,
-    description_ar: null,
-    description_en: null,
+    name_ar: v.name_ar ?? null,
+    name_en: v.name_en ?? null,
+    slug: v.slug ?? null,
+    category_id: v.category_id ?? null,
+    model_id: v.model_id ?? null,
+    is_featured: Boolean(v.is_featured),
+    is_bestseller: Boolean(v.is_bestseller),
+    is_new: Boolean(v.is_new),
+    description_ar: v.description_ar ?? null,
+    description_en: v.description_en ?? null,
     // Variant pricing: base_price = old/reference price, sale_price = current price, final_price = effective price.
     price:
       Number(v.final_price ?? 0) > 0
@@ -276,6 +318,7 @@ function toStoreProduct(
   variants: DbProductVariant[],
   images: DbProductImage[],
   rating?: { average: number; count: number },
+  model?: DbModel,
 ): StoreProduct {
   const productImages = images
     .filter((image) => image.product_id === product.id && !image.variant_id)
@@ -295,7 +338,15 @@ function toStoreProduct(
     const oldPrice = variant.old_price != null && Number(variant.old_price) > price ? Number(variant.old_price) : undefined;
     return {
       id: variant.id,
-      name: variant.variant_name,
+      name: variant.name_ar || variant.name_en || variant.variant_value || product.name_ar || product.name_en,
+      nameAr: variant.name_ar || undefined,
+      nameEn: variant.name_en || undefined,
+      descriptionAr: variant.description_ar ?? product.description_ar ?? "",
+      descriptionEn: variant.description_en ?? product.description_en ?? variant.description_ar ?? product.description_ar ?? "",
+      slug: variant.slug || undefined,
+      categoryId: variant.category_id ?? product.category_id,
+      modelId: variant.model_id ?? product.model_id ?? null,
+      type: variant.variant_type ?? undefined,
       value: variant.variant_value ?? undefined,
       color: variant.color ?? undefined,
       price,
@@ -338,6 +389,8 @@ function toStoreProduct(
     },
     category: category?.slug ?? "",
     categoryId: product.category_id,
+    modelId: product.model_id ?? null,
+    model: model ? { ar: model.name_ar, en: model.name_en, image: model.image_url } : undefined,
     price: Number(product.price) || 0,
     oldPrice: product.old_price == null || Number(product.old_price) <= Number(product.price) ? undefined : Number(product.old_price),
     colors: makeColors(productVariants),
@@ -352,7 +405,8 @@ function toStoreProduct(
 }
 
 export async function listStoreProducts(): Promise<StoreProduct[]> {
-  const [products, categories] = await Promise.all([listProducts(), listCategories()]);
+  const [products, categories, models] = await Promise.all([listProducts(), listCategories(), listModels()]);
+  const modelMap = new Map(models.map((model) => [model.id, model]));
   const categoryMap = new Map(categories.map((category) => [category.id, category]));
   const [variantsResult, imagesResult] = await Promise.allSettled([
     listProductVariants(products.map((product) => product.id)),
@@ -367,6 +421,7 @@ export async function listStoreProducts(): Promise<StoreProduct[]> {
     variants,
     images,
     ratings.get(product.id),
+    product.model_id ? modelMap.get(product.model_id) : undefined,
   ));
 }
 
@@ -379,7 +434,7 @@ export async function getStoreProduct(slug: string): Promise<StoreProduct | null
 
   const { data: row, error } = await supabase
     .from("products")
-    .select("id,slug,name_ar,name_en,description_ar,description_en,color,category_id,base_price,sale_price,final_price,stock_quantity,is_active,is_featured,is_bestseller,is_new,barcode,sku,created_at,updated_at")
+    .select("id,slug,name_ar,name_en,description_ar,description_en,color,category_id,model_id,base_price,sale_price,final_price,stock_quantity,is_active,is_featured,is_bestseller,is_new,barcode,sku,created_at,updated_at")
     .eq("slug", cleanSlug)
     .maybeSingle();
   if (error) throw error;
@@ -388,7 +443,7 @@ export async function getStoreProduct(slug: string): Promise<StoreProduct | null
   const product: DbProduct = {
     id: row.id, slug: row.slug, name_ar: row.name_ar || "", name_en: row.name_en || "",
     description_ar: row.description_ar ?? null, description_en: row.description_en ?? null,
-    category_id: row.category_id ?? null, price: Number(row.final_price) > 0 ? Number(row.final_price) : 0,
+    category_id: row.category_id ?? null, model_id: row.model_id ?? null, price: Number(row.final_price) > 0 ? Number(row.final_price) : 0,
     old_price: Number(row.base_price ?? 0) > 0 ? Number(row.base_price) : null,
     stock: Number(row.stock_quantity ?? 0), in_stock: Boolean(row.is_active && Number(row.stock_quantity ?? 0) > 0),
     featured: Boolean(row.is_featured), best_seller: Boolean(row.is_bestseller), is_new: Boolean(row.is_new),
@@ -396,12 +451,13 @@ export async function getStoreProduct(slug: string): Promise<StoreProduct | null
     created_at: row.created_at, updated_at: row.updated_at,
   };
 
-  const [categoryResult, variantsResult, imagesResult] = await Promise.allSettled([
+  const [categoryResult, variantsResult, imagesResult, modelResult] = await Promise.allSettled([
     product.category_id
       ? supabase.from("categories").select("id,slug,name_ar,name_en,image_url,created_at").eq("id", product.category_id).maybeSingle()
       : Promise.resolve({ data: null, error: null } as any),
     listProductVariants([product.id]),
     listProductImages([product.id]),
+    product.model_id ? supabase.from("product_models").select("id,slug,name_ar,name_en,image_url,storage_path,created_at").eq("id", product.model_id).maybeSingle() : Promise.resolve({ data: null, error: null } as any),
   ]);
 
   if (variantsResult.status === "rejected") throw variantsResult.reason;
@@ -411,7 +467,8 @@ export async function getStoreProduct(slug: string): Promise<StoreProduct | null
     ? ((categoryResult.value?.data ?? undefined) as DbCategory | undefined)
     : undefined;
   const ratings = await listProductRatingSummary([product.id]);
-  return toStoreProduct(product, category, variantsResult.value, imagesResult.value, ratings.get(product.id));
+  const model = modelResult.status === "fulfilled" ? (modelResult.value?.data as DbModel | null) ?? undefined : undefined;
+  return toStoreProduct(product, category, variantsResult.value, imagesResult.value, ratings.get(product.id), model);
 }
 
 export type ShippingRate = {

@@ -58,15 +58,19 @@ export function ProductCard({
   imageRatio?: "square" | "wide" | "portrait";
   imageFit?: "cover" | "contain";
 }) {
-  const { t, pick, price } = useLang();
+  const { t, pick, price, lang } = useLang();
   const { add } = useCart();
   const [added, setAdded] = useState(false);
   const displayPrice = variant?.price ?? product.price;
   const displayOldPrice = variant?.oldPrice ?? product.oldPrice;
   const displayImage = variant?.primaryImage ?? product.images[0];
-  const displayName = variant?.name || pick(product.name.ar, product.name.en);
+  const displayName = variant
+    ? pick(variant.nameAr || variant.value || product.name.ar, variant.nameEn || variant.value || product.name.en)
+    : pick(product.name.ar, product.name.en);
+  const variantTypeLabels: Record<string, { ar: string; en: string }> = { color: { ar: "اللون", en: "Color" }, model: { ar: "الموديل", en: "Model" }, size: { ar: "المقاس", en: "Size" }, storage: { ar: "السعة", en: "Storage" }, material: { ar: "الخامة", en: "Material" }, other: { ar: "الاختيار", en: "Option" } };
+  const variantLabel = variant ? `${variantTypeLabels[variant.type || "other"]?.[lang] || variant.type}: ${variant.value || variant.name}` : "";
   const off = discountPct(displayPrice, displayOldPrice);
-  const variantColor = variant?.color ?? variant?.value;
+  const variantColor = variant?.color ?? (variant?.type === "color" ? variant.value : undefined);
 
   const onAdd = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -119,7 +123,7 @@ export function ProductCard({
         </div>
         {variant && (
           <span className="absolute end-3 top-3 flex max-w-[52%] items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[10px] font-semibold text-foreground shadow-sm backdrop-blur">
-            <Layers3 size={11} /> <span className="truncate">{variant.name}</span>
+            <Layers3 size={11} /> <span className="truncate">{variantLabel}</span>
           </span>
         )}
       </div>
@@ -127,7 +131,7 @@ export function ProductCard({
       <div className="flex flex-1 flex-col gap-3 p-4">
         <div>
           <div className="line-clamp-2 text-sm font-medium sm:text-base">{displayName}</div>
-          {variant && <div className="mt-1 line-clamp-1 text-[11px] text-subtle">{pick(product.name.ar, product.name.en)}</div>}
+          {variant && <div className="mt-1 line-clamp-1 text-[11px] text-subtle">{variantLabel}</div>}
         </div>
 
         <Rating average={product.ratingAverage} count={product.ratingCount} />

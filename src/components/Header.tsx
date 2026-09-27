@@ -1,9 +1,9 @@
-
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { Menu, Search, ShoppingBag, X } from "lucide-react";
 import { useLang } from "@/lib/i18n";
 import { useCart } from "@/lib/cart";
+import { listCategories, type DbCategory } from "@/lib/db";
 import { cn } from "@/lib/utils";
 
 function LangSwitch({ className }: { className?: string }) {
@@ -44,13 +44,14 @@ function LangSwitch({ className }: { className?: string }) {
 }
 
 export function Header() {
-  const { t } = useLang();
+  const { t, pick } = useLang();
   const { count } = useCart();
   const navigate = useNavigate();
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [q, setQ] = useState("");
+  const [categories, setCategories] = useState<DbCategory[]>([]);
 
   const pathname = useRouterState({
     select: (s) => s.location.pathname,
@@ -59,7 +60,24 @@ export function Header() {
   useEffect(() => {
     setMenuOpen(false);
     setSearchOpen(false);
+
   }, [pathname]);
+
+  useEffect(() => {
+    let alive = true;
+
+    listCategories()
+      .then((nextCategories) => {
+        if (alive) setCategories(nextCategories);
+      })
+      .catch(() => {
+        if (alive) setCategories([]);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,17 +92,11 @@ export function Header() {
     });
   };
 
-  const links = [
-    { to: "/", label: t("nav.home") },
-    { to: "/categories", label: t("nav.categories") },
-    { to: "/products", label: t("nav.products") },
-    { to: "/offers", label: t("nav.offers") },
-  ] as const;
-
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
-      <div className="relative mx-auto grid h-16 max-w-7xl grid-cols-[auto_1fr_auto] items-center gap-3 px-4 sm:px-6">
-        {/* SODFA Logo */}
+    <header
+      className="sticky top-0 z-50 border-b border-border bg-background/90 backdrop-blur-xl"
+    >
+      <div className="relative mx-auto flex min-h-16 max-w-7xl items-center gap-2 px-3 sm:px-5 lg:px-6">
         <Link
           to="/"
           className="flex shrink-0 items-center"
@@ -93,41 +105,35 @@ export function Header() {
           <img
             src="/Asset%202.png"
             alt="SODFA صدفة"
-            className="h-10 w-auto object-contain"
+            className="h-9 w-auto object-contain sm:h-10"
           />
         </Link>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden min-w-0 items-center justify-center gap-7 text-sm md:flex">
-          {links.map((l) => (
+        {/* Dynamic category navigation */}
+        <nav className="hidden min-w-0 flex-1 items-center justify-center gap-1 md:flex">
+          {categories.map((category) => (
             <Link
-              key={l.to}
-              to={l.to}
-              activeOptions={{ exact: l.to === "/" }}
-              className={cn(
-                "group relative py-2 text-muted-foreground transition-colors duration-300 ease-out",
-                "hover:text-foreground",
-              )}
-              activeProps={{
-                className:
-                  "group relative py-2 text-foreground transition-colors duration-300 ease-out",
-              }}
+              key={category.id}
+              to="/category/$slug"
+              params={{ slug: category.slug }}
+              className="group relative flex min-h-16 items-center px-3 py-2 text-sm font-medium text-muted-foreground transition-colors duration-200 hover:text-foreground lg:px-4"
+              activeProps={{ className: "group relative flex min-h-16 items-center px-3 py-2 text-sm font-semibold text-foreground lg:px-4" }}
             >
-              <span className="relative z-10">{l.label}</span>
-
-              {/* Animated underline - centered in both RTL and LTR */}
-              <span
-                className={cn(
-                  "pointer-events-none absolute bottom-0 left-1/2 h-[2px] w-0 -translate-x-1/2 rounded-full bg-sodfa opacity-0",
-                  "transition-[width,opacity] duration-300 ease-out",
-                  "group-hover:w-full group-hover:opacity-100",
-                )}
-              />
+              <span className="whitespace-nowrap">{pick(category.name_ar, category.name_en)}</span>
+              <span className="pointer-events-none absolute bottom-1 start-1/2 h-[2px] w-0 -translate-x-1/2 rounded-full bg-sodfa opacity-0 transition-all duration-200 group-hover:w-[calc(100%-1.5rem)] group-hover:opacity-100" />
             </Link>
           ))}
+          <Link
+            to="/offers"
+            className="group relative flex min-h-16 items-center px-3 py-2 text-sm font-medium text-muted-foreground transition-colors duration-200 hover:text-foreground lg:px-4"
+            activeProps={{ className: "group relative flex min-h-16 items-center px-3 py-2 text-sm font-semibold text-foreground lg:px-4" }}
+          >
+            <span className="whitespace-nowrap">{t("offers.title")}</span>
+            <span className="pointer-events-none absolute bottom-1 start-1/2 h-[2px] w-0 -translate-x-1/2 rounded-full bg-sodfa opacity-0 transition-all duration-200 group-hover:w-[calc(100%-1.5rem)] group-hover:opacity-100" />
+          </Link>
         </nav>
 
-        <div className="me-12 flex shrink-0 items-center gap-1 md:me-0">
+        <div className="ms-auto flex shrink-0 items-center gap-0.5 sm:gap-1">
           <button
             aria-label={t("nav.search")}
             onClick={() => setSearchOpen((v) => !v)}
@@ -142,7 +148,6 @@ export function Header() {
             className="relative grid h-10 w-10 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-card hover:text-foreground"
           >
             <ShoppingBag className="h-5 w-5" />
-
             {count > 0 && (
               <span className="absolute end-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-sodfa px-1 text-[10px] font-bold text-primary-foreground">
                 {count}
@@ -150,40 +155,31 @@ export function Header() {
             )}
           </Link>
 
-          <LangSwitch className="ms-2 hidden lg:flex" />
+          <LangSwitch className="ms-1 hidden lg:flex" />
 
           <button
             aria-label={t("nav.menu")}
             onClick={() => setMenuOpen((v) => !v)}
-            className="absolute end-4 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-card hover:text-foreground sm:end-6 md:hidden"
+            className="grid h-10 w-10 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-card hover:text-foreground md:hidden"
           >
-            {menuOpen ? (
-              <X className="h-5 w-5" />
-            ) : (
-              <Menu className="h-5 w-5" />
-            )}
+            {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
       </div>
 
-      {/* Search */}
       {searchOpen && (
-        <div className="border-t border-border bg-background/95 px-4 py-3 sm:px-6">
-          <form
-            onSubmit={submit}
-            className="mx-auto flex max-w-3xl items-center gap-2"
-          >
+        <div className="border-t border-border bg-background/95 px-3 py-3 sm:px-6">
+          <form onSubmit={submit} className="mx-auto flex w-full max-w-3xl items-center gap-2">
             <input
               autoFocus
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder={t("shop.search")}
-              className="h-11 w-full rounded-xl border border-border bg-input px-4 text-sm outline-none placeholder:text-subtle focus:border-primary"
+              className="h-11 min-w-0 w-full rounded-xl border border-border bg-input px-4 text-sm outline-none placeholder:text-subtle focus:border-primary"
             />
-
             <button
               type="submit"
-              className="h-11 shrink-0 rounded-xl bg-sodfa px-5 text-sm font-medium text-primary-foreground"
+              className="h-11 shrink-0 rounded-xl bg-sodfa px-4 text-sm font-medium text-primary-foreground sm:px-5"
             >
               {t("nav.search")}
             </button>
@@ -191,27 +187,31 @@ export function Header() {
         </div>
       )}
 
-      {/* Mobile Menu */}
+      {/* Mobile category navigation */}
       {menuOpen && (
-        <div className="border-t border-border bg-background px-4 py-4 md:hidden">
-          <nav className="flex flex-col">
-            {links.map((l) => (
+        <div className="max-h-[calc(100vh-4rem)] overflow-y-auto border-t border-border bg-background px-3 py-3 md:hidden">
+          <nav className="space-y-1">
+            {categories.map((category) => (
               <Link
-                key={l.to}
-                to={l.to}
-                className="border-b border-border py-3 text-base text-muted-foreground transition-colors duration-300 last:border-0 hover:text-foreground"
-                activeProps={{
-                  className:
-                    "border-b border-border py-3 text-base text-foreground transition-colors duration-300 last:border-0",
-                }}
-                activeOptions={{ exact: l.to === "/" }}
+                key={category.id}
+                to="/category/$slug"
+                params={{ slug: category.slug }}
+                onClick={() => setMenuOpen(false)}
+                className="flex min-h-12 items-center rounded-xl px-3 py-2 text-base font-medium text-foreground transition-colors hover:bg-card hover:text-sodfa"
               >
-                {l.label}
+                {pick(category.name_ar, category.name_en)}
               </Link>
             ))}
+            <Link
+              to="/offers"
+              onClick={() => setMenuOpen(false)}
+              className="flex min-h-12 items-center rounded-xl px-3 py-2 text-base font-semibold text-foreground transition-colors hover:bg-card hover:text-sodfa"
+            >
+              {t("offers.title")}
+            </Link>
           </nav>
 
-          <LangSwitch className="mt-4 w-fit" />
+          <LangSwitch className="mt-3 w-fit" />
         </div>
       )}
     </header>

@@ -35,7 +35,7 @@ export const Route = createFileRoute("/product/$slug")({
 function ProductPage() {
   const { product, related } = Route.useLoaderData();
   const { variant: variantParam } = Route.useSearch();
-  const { t, pick, price } = useLang();
+  const { t, pick, price, lang } = useLang();
   const { add } = useCart();
 
   const [selectedVariantId, setSelectedVariantId] = useState<string | undefined>(variantParam);
@@ -65,6 +65,25 @@ function ProductPage() {
     return () => window.clearInterval(id);
   }, [gallery.length, paused]);
 
+  const variantTypeLabels: Record<string, { ar: string; en: string }> = { color: { ar: "اللون", en: "Color" }, model: { ar: "الموديل", en: "Model" }, size: { ar: "المقاس", en: "Size" }, storage: { ar: "السعة", en: "Storage" }, material: { ar: "الخامة", en: "Material" }, other: { ar: "الاختيار", en: "Option" } };
+  const variantLabel = (variant?: StoreVariant) => variant ? `${variantTypeLabels[variant.type || "other"]?.[lang] || (lang === "ar" ? "الاختيار" : "Option")}: ${variant.value || variant.name}` : "";
+
+  const activeName = selectedVariant
+    ? pick(
+        selectedVariant.nameAr || selectedVariant.value || product.name.ar,
+        selectedVariant.nameEn || selectedVariant.value || product.name.en,
+      )
+    : pick(product.name.ar, product.name.en);
+  const activeDescription = selectedVariant
+    ? pick(selectedVariant.descriptionAr ?? product.description.ar, selectedVariant.descriptionEn ?? product.description.en)
+    : pick(product.description.ar, product.description.en);
+  const activeModelName =
+    selectedVariant && /model|موديل/i.test(selectedVariant.type || "") && selectedVariant.value
+      ? selectedVariant.value
+      : product.model
+        ? pick(product.model.ar, product.model.en)
+        : "";
+  const baseModelName = product.model ? pick(product.model.ar, product.model.en) : pick(product.name.ar, product.name.en);
   const activePrice = selectedVariant?.price ?? product.price;
   const activeOldPrice = selectedVariant?.oldPrice ?? product.oldPrice;
   const activeInStock = selectedVariant?.inStock ?? product.inStock;
@@ -106,16 +125,17 @@ function ProductPage() {
                 <div className="absolute bottom-3 start-1/2 flex -translate-x-1/2 gap-1.5 rounded-full bg-background/60 px-2 py-1 backdrop-blur">{gallery.map((_, i) => <button key={i} type="button" aria-label={`image ${i + 1}`} onClick={() => setImg(i)} className={cn("h-1.5 rounded-full transition-all", i === img ? "w-7 bg-white" : "w-2 bg-white/45")}/>)}</div>
               </>}
             </div>
-            {gallery.length > 1 && <div className="mt-3 grid grid-cols-5 gap-2">{gallery.slice(0, 10).map((src, i) => <button type="button" key={`${src}-${i}`} onClick={() => setImg(i)} className={cn("overflow-hidden rounded-xl border", i === img ? "border-primary ring-2 ring-primary/20" : "border-border")}><SmartImage src={src} alt="" ratio="square"/></button>)}</div>}
+            {gallery.length > 1 && <div className="mt-3 grid grid-cols-5 gap-2">{gallery.slice(0, 10).map((src, i) => <button type="button" key={`${src}-${i}`} onClick={() => setImg(i)} className={cn("overflow-hidden rounded-xl border", i === img ? "border-primary ring-2 ring-primary/20" : "border-border")}><SmartImage src={src} alt="" ratio="square" imgClassName="object-contain bg-white p-1"/></button>)}</div>}
           </div>
 
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              {selectedVariant && <span className="flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[11px] text-primary-light"><Layers3 size={12}/> {selectedVariant.name}</span>}
+              {selectedVariant && <span className="flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[11px] text-primary-light"><Layers3 size={12}/> {variantLabel(selectedVariant)}</span>}
               <span className="rounded-full border border-border px-3 py-1 text-[11px] text-subtle">{product.category || "SODFA"}</span>
             </div>
-            <h1 className="mt-4 text-2xl font-bold sm:text-4xl">{selectedVariant?.name || pick(product.name.ar, product.name.en)}</h1>
-            {selectedVariant && <p className="mt-2 text-sm text-subtle">{pick(product.name.ar, product.name.en)} — نسخة/تفريعة من المنتج الرئيسي</p>}
+            <h1 className="mt-4 text-2xl font-bold sm:text-4xl">{activeName}</h1>
+            {activeModelName && <div className="mt-2 flex items-center gap-2 text-sm text-subtle">{!selectedVariant && product.model?.image && <SmartImage src={product.model.image} alt="" className="h-8 w-8 rounded-md" ratio="square" imgClassName="object-contain bg-white"/>}<span>{activeModelName}</span></div>}
+            {selectedVariant && <p className="mt-2 text-sm text-subtle">{variantLabel(selectedVariant)}</p>}
             <div className="mt-4 flex flex-wrap items-baseline gap-3">
               {activeInStock && (
                 <>
@@ -125,17 +145,17 @@ function ProductPage() {
               )}
               <span className="rounded-full border px-3 py-1 text-xs">{activeInStock ? t("product.inStock") : t("product.outStock")}</span>
             </div>
-            <p className="mt-5 text-sm leading-relaxed text-muted-foreground">{pick(product.description.ar, product.description.en)}</p>
+            <p className="mt-5 text-sm leading-relaxed text-muted-foreground">{activeDescription}</p>
 
             {product.variants.length > 0 && (
               <div className="mt-7">
                 <div className="flex items-center justify-between"><span className="text-xs tracking-widest text-subtle uppercase">اختيارات المنتج</span><span className="text-[11px] text-subtle">{product.variants.length} اختيار</span></div>
                 <div className="mt-3 grid gap-2 sm:grid-cols-2">
                   <button type="button" onClick={() => setSelectedVariantId(undefined)} className={cn("flex items-center gap-3 rounded-xl border p-3 text-start", !selectedVariant ? "border-primary bg-primary/10" : "border-border")}>
-                    <SmartImage src={product.images[0] || "/placeholder.svg"} alt="" className="h-12 w-12 shrink-0 rounded-lg" ratio="square"/><span><span className="block text-sm font-semibold">{pick(product.name.ar, product.name.en)}</span>{product.inStock && <span className="text-xs text-subtle">{price(product.price)}</span>}</span>
+                    <SmartImage src={product.images[0] || "/placeholder.svg"} alt={pick(product.name.ar, product.name.en)} className="h-12 w-12 shrink-0 rounded-lg" ratio="square" imgClassName="object-contain bg-white p-1"/><span className="min-w-0"><span className="block truncate text-sm font-semibold">{baseModelName}</span><span className="block truncate text-xs text-subtle">الموديل</span>{product.inStock && <span className="text-xs text-subtle">{price(product.price)}</span>}</span>
                   </button>
                   {product.variants.map((v) => <button type="button" key={v.id} onClick={() => chooseVariant(v)} className={cn("flex items-center gap-3 rounded-xl border p-3 text-start", selectedVariant?.id === v.id ? "border-primary bg-primary/10" : "border-border")}>
-                    <SmartImage src={v.primaryImage} alt="" className="h-12 w-12 shrink-0 rounded-lg" ratio="square"/><span className="min-w-0"><span className="block truncate text-sm font-semibold">{v.name}</span>{v.inStock && <span className="text-xs text-subtle">{price(v.price)}</span>}</span>
+                    <SmartImage src={v.primaryImage || "/placeholder.svg"} alt={variantLabel(v)} className="h-12 w-12 shrink-0 rounded-lg bg-white" ratio="square" imgClassName="object-contain bg-white p-1"/><span className="min-w-0"><span className="block truncate text-sm font-semibold">{v.value || v.name}</span><span className="block truncate text-xs text-subtle">{variantTypeLabels[v.type || "other"]?.[lang] || (lang === "ar" ? "الاختلاف" : "Option")}</span>{v.inStock && <span className="text-xs text-subtle">{price(v.price)}</span>}</span>
                   </button>)}
                 </div>
               </div>

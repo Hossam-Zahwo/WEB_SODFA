@@ -9,8 +9,8 @@ import { AdminPage } from "@/components/AdminShell";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import {
-  listCategories, listProductImages, listProductVariants, listProducts,
-  type DbCategory, type DbProduct, type DbProductImage, type DbProductVariant,
+  listCategories, listModels, listProductImages, listProductVariants, listProducts,
+  type DbCategory, type DbModel, type DbProduct, type DbProductImage, type DbProductVariant,
 } from "@/lib/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +22,7 @@ export const Route = createFileRoute("/admin/products")({ component: ProductsAdm
 
 const empty = {
   slug: "", name_ar: "", name_en: "", description_ar: "", description_en: "", color: "",
-  category_id: "", price: "", old_price: "", stock: "0", in_stock: true,
+  category_id: "", model_id: "", price: "", old_price: "", stock: "0", in_stock: true,
   featured: false, best_seller: false, is_new: false,
 };
 
@@ -33,6 +33,17 @@ type VariantDraft = {
   variant_name: string;
   variant_type: string;
   variant_value: string;
+  name_ar: string;
+  name_en: string;
+  slug: string;
+  description_ar: string;
+  description_en: string;
+  category_id: string;
+  model_id: string;
+  featured: boolean;
+  best_seller: boolean;
+  is_new: boolean;
+  in_stock: boolean;
   color: string;
   sku: string;
   barcode: string;
@@ -74,14 +85,25 @@ async function makeUniqueCode(prefix: string, table: "products" | "product_varia
 
 function makeVariant(): VariantDraft {
   return {
-    variant_name: "", variant_type: "لون", variant_value: "", color: "",
+    variant_name: "", variant_type: "color", variant_value: "", name_ar: "", name_en: "", slug: "", description_ar: "", description_en: "", category_id: "", model_id: "", featured: false, best_seller: false, is_new: false, in_stock: true, color: "",
     sku: "", barcode: "", price: "", old_price: "", stock: "0", images: [], existingImages: [], primaryIndex: 0,
   };
+}
+
+function normalizeVariantType(value: string | null | undefined) {
+  const v = (value || "").trim().toLowerCase();
+  if (["color", "لون", "اللون"].includes(v)) return "color";
+  if (["model", "موديل", "الموديل", "جهاز"].includes(v)) return "model";
+  if (["size", "مقاس", "المقاس", "حجم"].includes(v)) return "size";
+  if (["storage", "سعة", "السعة", "مساحة"].includes(v)) return "storage";
+  if (["material", "خامة", "الخامة", "مادة"].includes(v)) return "material";
+  return "other";
 }
 
 function ProductsAdmin() {
   const [items, setItems] = useState<AdminProduct[]>([]);
   const [cats, setCats] = useState<DbCategory[]>([]);
+  const [models, setModels] = useState<DbModel[]>([]);
   const [variants, setVariants] = useState<DbProductVariant[]>([]);
   const [images, setImages] = useState<DbProductImage[]>([]);
   const [form, setForm] = useState(empty);
@@ -115,7 +137,9 @@ function ProductsAdmin() {
           imgs.find((i) => i.product_id === p.id && !i.variant_id && i.is_primary)?.image_url ||
           imgs.find((i) => i.product_id === p.id && !i.variant_id)?.image_url,
       })));
-      setCats(await listCategories());
+      const [categories, productModels] = await Promise.all([listCategories(), listModels()]);
+      setCats(categories);
+      setModels(productModels);
       setVariants(await listProductVariants(ps.map((p) => p.id)));
       setImages(imgs);
       setSelectedIds(new Set());
@@ -163,7 +187,7 @@ function ProductsAdmin() {
     setForm({
       slug: p.slug, name_ar: p.name_ar, name_en: p.name_en,
       description_ar: p.description_ar || "", description_en: p.description_en || "", color: (p as any).color || "",
-      category_id: p.category_id || "", price: String(p.price),
+      category_id: p.category_id || "", model_id: p.model_id || "", price: String(p.price),
       old_price: p.old_price == null ? "" : String(p.old_price),
       stock: String(p.stock), in_stock: p.in_stock, featured: p.featured,
       best_seller: p.best_seller, is_new: p.is_new,
@@ -175,8 +199,12 @@ function ProductsAdmin() {
       return {
         id: v.id,
         variant_name: v.variant_name,
-        variant_type: v.variant_type || "لون",
+        variant_type: normalizeVariantType(v.variant_type),
         variant_value: v.variant_value || "",
+        name_ar: v.name_ar || "", name_en: v.name_en || "", slug: v.slug || "",
+        description_ar: v.description_ar || "", description_en: v.description_en || "",
+        category_id: v.category_id || "", model_id: v.model_id || "",
+        featured: Boolean(v.is_featured), best_seller: Boolean(v.is_bestseller), is_new: Boolean(v.is_new), in_stock: v.is_active !== false,
         color: v.color || "",
         sku: v.sku || "",
         barcode: v.barcode || "",
@@ -356,6 +384,7 @@ function ProductsAdmin() {
         description_en: form.description_en || null,
         color: form.color.trim() || null,
         category_id: form.category_id || null,
+        model_id: form.model_id || null,
         base_price: form.old_price ? Number(form.old_price) : Number(form.price) || 0,
         sale_price: Number(form.price) || 0,
         final_price: Number(form.price) || 0,
@@ -414,17 +443,25 @@ function ProductsAdmin() {
           const oldPrice = enteredOldPrice !== null && enteredOldPrice > finalPrice ? enteredOldPrice : null;
           const vp: any = {
             product_id: productId,
-            variant_name: v.variant_name.trim() || `${form.name_ar} - ${value || `Variant ${i + 1}`}`,
-            variant_type: v.variant_type.trim() || "Variant",
+            variant_name: form.name_ar.trim() || form.name_en.trim() || `Product ${i + 1}`,
+            variant_type: v.variant_type.trim() || "other",
             variant_value: value || null,
-            color: v.color.trim() || (/لون|color/i.test(v.variant_type) ? value : null),
+            name_ar: v.name_ar.trim() || null,
+            name_en: v.name_en.trim() || null,
+            slug: v.slug.trim() || null,
+            description_ar: v.description_ar.trim() || form.description_ar || null,
+            description_en: v.description_en.trim() || form.description_en || null,
+            category_id: v.category_id || form.category_id || null,
+            model_id: v.model_id || form.model_id || null,
+            is_featured: v.featured, is_bestseller: v.best_seller, is_new: v.is_new,
+            color: v.color.trim() || (normalizeVariantType(v.variant_type) === "color" ? value : null),
             sale_price: finalPrice,
             final_price: finalPrice,
             base_price: oldPrice ?? finalPrice,
             stock_quantity: Math.max(0, Number(v.stock) || 0),
             sku: v.sku || await makeUniqueCode(`SODFA-V-${productId.slice(0, 6).toUpperCase()}`, "product_variants", "sku"),
             barcode: v.barcode || await makeUniqueCode("623", "product_variants", "barcode"),
-            is_active: true,
+            is_active: v.in_stock,
             display_order: i,
           };
 
@@ -560,7 +597,7 @@ function ProductsAdmin() {
         if (!drafts.length) {
           const sku = await makeUniqueCode("SODFA-V", "product_variants", "sku");
           const barcode = await makeUniqueCode("623", "product_variants", "barcode");
-          setDrafts([{ ...makeVariant(), variant_name: `${form.name_ar || suggestion.name_en || "Product"} - ${suggestion.variant_value || "Variant"}`, variant_type: suggestion.variant_type || "Variant", variant_value: suggestion.variant_value || "", color: suggestion.color || "", sku, barcode, price: form.price }]);
+          setDrafts([{ ...makeVariant(), variant_name: `${form.name_ar || suggestion.name_en || "Product"} - ${suggestion.variant_value || "Variant"}`, variant_type: normalizeVariantType(suggestion.variant_type), variant_value: suggestion.variant_value || "", color: suggestion.color || "", sku, barcode, price: form.price }]);
         }
       }
       setAutomationDone(true);
@@ -677,9 +714,10 @@ function ProductsAdmin() {
                       <Field label="English Name *"><Input required value={form.name_en} placeholder="e.g. Premium Phone Case" onChange={(e) => setForm({ ...form, name_en: e.target.value })}/></Field>
                       <Field label="لون المنتج"><Input value={form.color} placeholder="مثال: أسود أو #000000" onChange={(e) => setForm({ ...form, color: e.target.value })}/></Field>
                       <div className="grid gap-4 sm:grid-cols-2">
-                        <Field label="Category"><select value={form.category_id} onChange={(e) => setForm({ ...form, category_id: e.target.value })} className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm"><option value="">بدون تصنيف</option>{cats.map((c) => <option key={c.id} value={c.id}>{c.name_ar}</option>)}</select></Field>
-                        <Field label="Slug"><Input value={form.slug} placeholder="premium-iphone-case" onChange={(e) => setForm({ ...form, slug: slugify(e.target.value) })}/></Field>
+                        <Field label="التصنيف"><select value={form.category_id} onChange={(e) => setForm({ ...form, category_id: e.target.value })} className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm"><option value="">بدون تصنيف</option>{cats.map((c) => <option key={c.id} value={c.id}>{c.name_ar}</option>)}</select></Field>
+                        <Field label="الموديل"><select value={form.model_id} onChange={(e) => setForm({ ...form, model_id: e.target.value })} className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm"><option value="">بدون موديل</option>{models.map((m) => <option key={m.id} value={m.id}>{m.name_ar} / {m.name_en}</option>)}</select></Field>
                       </div>
+                      <Field label="Slug"><Input value={form.slug} placeholder="premium-iphone-case" onChange={(e) => setForm({ ...form, slug: slugify(e.target.value) })}/></Field>
                       <div className="grid gap-4 sm:grid-cols-2">
                         <Field label="السعر الحالي (الفعلي) *"><Input required type="number" min="0" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })}/></Field>
                         <Field label="السعر القديم (قبل الخصم)"><Input type="number" min="0" value={form.old_price} onChange={(e) => setForm({ ...form, old_price: e.target.value })}/></Field>
@@ -717,7 +755,7 @@ function ProductsAdmin() {
                     <div className="flex items-center justify-between gap-3"><div><h3 className="font-black">Related Variants</h3><p className="text-xs text-slate-500">كل Variant يأخذ بيانات المنتج الأساسية ويضيف الاختلاف والصور.</p></div><button type="button" onClick={() => { const next = !hasVariants; setHasVariants(next); if (next && !drafts.length) setDrafts([makeVariant()]); }} className={`relative h-6 w-11 rounded-full ${hasVariants ? "bg-blue-600" : "bg-slate-300"}`}><span className={`absolute top-1 h-4 w-4 rounded-full bg-white transition ${hasVariants ? "right-1" : "right-6"}`}/></button></div>
                     {hasVariants && <div className="mt-4 space-y-4">{drafts.map((v, i) => (
                       <VariantEditor
-                        key={v.id || i} variant={v} index={i} baseName={form.name_ar}
+                        key={v.id || i} variant={v} index={i} baseName={form.name_ar} categories={cats} models={models}
                         onChange={updateDraft}
                         onRemove={() => setDrafts((p) => p.filter((_, n) => n !== i))}
                         onFiles={addVariantFiles}
@@ -840,7 +878,7 @@ function ImageTile(props: {
 }
 
 function VariantEditor(props: {
-  variant: VariantDraft; index: number; baseName: string;
+  variant: VariantDraft; index: number; baseName: string; categories: DbCategory[]; models: DbModel[];
   onChange: (i: number, patch: Partial<VariantDraft>) => void;
   onRemove: () => void; onFiles: (i: number, f: FileList | File[]) => void;
   onRemoveExisting: (image: DbProductImage) => void;
@@ -856,10 +894,18 @@ function VariantEditor(props: {
   return <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
     <div className="flex items-start justify-between gap-3"><div><div className="font-black">Variant {props.index + 1}</div><div className="text-xs text-slate-500">مثل: أسود / iPhone 15 Pro / 256GB</div></div><Button type="button" size="sm" variant="destructive" onClick={props.onRemove}><Trash2 size={14}/></Button></div>
     <div className="mt-4 grid gap-3 sm:grid-cols-2">
-      <Field label="اسم الـ Variant"><Input value={v.variant_name} placeholder={`${props.baseName} - أسود`} onChange={(e) => props.onChange(props.index, { variant_name: e.target.value })}/></Field>
-      <Field label="نوع الاختلاف"><Input value={v.variant_type} placeholder="لون / مقاس / موديل" onChange={(e) => props.onChange(props.index, { variant_type: e.target.value })}/></Field>
-      <Field label="قيمة الاختلاف"><Input value={v.variant_value} placeholder="أسود / XL / iPhone 15" onChange={(e) => props.onChange(props.index, { variant_value: e.target.value })}/></Field>
+      <div className="rounded-lg border border-blue-100 bg-blue-50 p-3 text-xs text-blue-800"><strong>اسم التفريعة:</strong> اكتب قيمة الاختلاف الخاصة بهذه التفريعة. ستظهر للعميل بدل تكرار اسم المنتج، مثل: 17 Pro Max أو أسود.</div>
+      <Field label="نوع التفريعة"><select value={v.variant_type} onChange={(e) => props.onChange(props.index, { variant_type: e.target.value })} className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm"><option value="color">اللون</option><option value="model">الموديل</option><option value="size">المقاس</option><option value="storage">السعة</option><option value="material">الخامة</option><option value="other">اختلاف آخر</option></select></Field>
+      <Field label={v.variant_type === "model" ? "اسم الموديل / التفريعة" : v.variant_type === "color" ? "اسم اللون / التفريعة" : "قيمة الاختلاف / اسم التفريعة"}><Input required value={v.variant_value} placeholder={v.variant_type === "model" ? "مثال: iPhone 17 Pro Max" : v.variant_type === "color" ? "مثال: أسود" : "مثال: XL أو 256GB"} onChange={(e) => props.onChange(props.index, { variant_value: e.target.value })}/></Field>
+      <Field label="الاسم العربي الخاص بالتفريعة"><Input value={v.name_ar} placeholder="فارغ = يرث اسم المنتج الرئيسي" onChange={(e) => props.onChange(props.index, { name_ar: e.target.value })}/></Field>
+      <Field label="Variant English Name"><Input value={v.name_en} placeholder="Blank = inherit main product name" onChange={(e) => props.onChange(props.index, { name_en: e.target.value })}/></Field>
+      <Field label="Slug خاص بالتفريعة"><Input value={v.slug} placeholder="اختياري، يُستخدم اسم المنتج إن تُرك فارغًا" onChange={(e) => props.onChange(props.index, { slug: slugify(e.target.value) })}/></Field>
+      <Field label="وصف التفريعة بالعربي"><Textarea rows={4} value={v.description_ar} placeholder="فارغ = يرث وصف المنتج الرئيسي" onChange={(e) => props.onChange(props.index, { description_ar: e.target.value })}/></Field>
+      <Field label="Variant English Description"><Textarea rows={4} value={v.description_en} placeholder="Blank = inherit main product description" onChange={(e) => props.onChange(props.index, { description_en: e.target.value })}/></Field>
+      <Field label="تصنيف التفريعة"><select value={v.category_id} onChange={(e) => props.onChange(props.index, { category_id: e.target.value })} className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm"><option value="">استخدام تصنيف المنتج الرئيسي</option>{props.categories.map((c) => <option key={c.id} value={c.id}>{c.name_ar}</option>)}</select></Field>
+      <Field label="موديل التفريعة"><select value={v.model_id} onChange={(e) => props.onChange(props.index, { model_id: e.target.value })} className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm"><option value="">استخدام موديل المنتج الرئيسي</option>{props.models.map((m) => <option key={m.id} value={m.id}>{m.name_ar} / {m.name_en}</option>)}</select></Field>
       <Field label="لون الـ Variant (اختياري)"><Input value={v.color} placeholder="#000 أو أسود" onChange={(e) => props.onChange(props.index, { color: e.target.value })}/></Field>
+      <div className="col-span-full grid gap-2 sm:grid-cols-2">{([["featured","Featured"],["best_seller","Best Seller"],["is_new","New"],["in_stock","Active"]] as const).map(([key,label]) => <label key={key} className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white p-3 text-xs font-semibold"><input type="checkbox" checked={v[key]} onChange={(e) => props.onChange(props.index, { [key]: e.target.checked })}/>{label}</label>)}</div>
       <Field label="السعر الحالي (الفعلي)"><Input type="number" min="0" value={v.price} onChange={(e) => props.onChange(props.index, { price: e.target.value })}/></Field>
       <Field label="السعر القديم (قبل الخصم)"><Input type="number" min="0" value={v.old_price} onChange={(e) => props.onChange(props.index, { old_price: e.target.value })}/></Field>
       <Field label="Stock الخاص بالـ Variant"><Input type="number" min="0" step="1" value={v.stock} onChange={(e) => props.onChange(props.index, { stock: e.target.value })}/></Field>

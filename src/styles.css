@@ -180,3 +180,16 @@
 .sodfa-admin-editor .text-white { color: #fff !important; }
 .sodfa-admin-editor .bg-black\/60, .sodfa-admin-editor .bg-black\/50 { color: #fff !important; }
 .sodfa-advanced-scroll { scrollbar-width: thin; }
+
+/* Header/category navigation: keep interactive catalog content usable at every viewport width. */
+@media (max-width: 767px) {
+  .sodfa-category-card {
+    min-width: 0;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1100px) {
+  .sodfa-category-card {
+    min-width: 0;
+  }
+}
