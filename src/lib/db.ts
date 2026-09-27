@@ -491,7 +491,7 @@ export async function getStoreProduct(slug: string): Promise<StoreProduct | null
   return toStoreProduct(product, category, variantsResult.value, imagesResult.value, ratings.get(product.id), model);
 }
 
-export const DEFAULT_STORE_WHATSAPP_NUMBER = "";
+export const DEFAULT_STORE_WHATSAPP_NUMBER = "201093384952";
 
 export function normalizeEgyptWhatsAppNumber(value: string) {
   const digits = String(value || "").replace(/\D/g, "");
@@ -504,13 +504,11 @@ export function normalizeEgyptWhatsAppNumber(value: string) {
 
 export async function getStoreWhatsAppNumber() {
   const { data, error } = await supabase
-    .from("store_settings")
+    .from("settings")
     .select("value")
-    .eq("key", "whatsapp_order_number")
+    .eq("key", "whatsapp_number")
     .maybeSingle();
   if (error) {
-    // Older databases can run the storefront before the optional settings migration.
-    // Keep checkout usable until the admin runs the migration.
     throw error;
   }
   return normalizeEgyptWhatsAppNumber(data?.value || "") || DEFAULT_STORE_WHATSAPP_NUMBER;

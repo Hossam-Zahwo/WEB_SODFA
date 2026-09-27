@@ -25,6 +25,12 @@ function OffersPage() {
   useEffect(() => {
     Promise.all([listStoreProducts(), listModels(), listSeries()]).then(([p, m, s]) => { setProducts(p); setModels(m); setSeries(s); }).catch(console.error);
   }, []);
+  useEffect(() => {
+    if (!selectedSeries && selectedModel) {
+      const model = models.find((item) => item.id === selectedModel);
+      if (model?.series_id) setSelectedSeries(model.series_id);
+    }
+  }, [models, selectedModel, selectedSeries]);
   const offers = useMemo(() => products.filter((p) => p.oldPrice && p.oldPrice > p.price), [products]);
   const modelIds = useMemo(() => {
     const ids = new Set<string>();
@@ -40,7 +46,7 @@ function OffersPage() {
       <p className="mt-1 text-sm text-subtle">{t("offers.sub")}</p>
       <div className="mt-7"><DeviceFilter series={series} models={models} selectedSeriesId={selectedSeries} selectedModelId={selectedModel} onSeriesSelect={(id) => { setSelectedSeries(id); setSelectedModel(undefined); }} onModelSelect={setSelectedModel} productModelIds={modelIds} /></div>
       <div className="mt-8">
-        {filteredOffers.length ? <ProductGrid products={filteredOffers} /> : <p className="py-16 text-center text-sm text-subtle">لا توجد عروض مرتبطة بهذا الموديل.</p>}
+        {selectedSeries && !selectedModel ? <p className="py-16 text-center text-sm text-subtle">{t("filter.chooseModel")}</p> : filteredOffers.length ? <ProductGrid products={filteredOffers} selectedModelId={selectedModel} /> : <p className="py-16 text-center text-sm text-subtle">{t("filter.noProducts")}</p>}
       </div>
     </div>
   );

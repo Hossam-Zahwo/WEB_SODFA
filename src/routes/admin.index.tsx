@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Package, Tags, ShoppingCart, RefreshCw, Plus, Trash2, Pencil, Upload, Star } from "lucide-react";
 import { AdminGuard } from "@/components/AdminGuard";
 import { AdminPage } from "@/components/AdminShell";
-import { dashboardStats, normalizeEgyptWhatsAppNumber, type CustomerReview, type ShippingRate } from "@/lib/db";
+import { dashboardStats, DEFAULT_STORE_WHATSAPP_NUMBER, type CustomerReview, type ShippingRate } from "@/lib/db";
 import { supabase } from "@/lib/supabase";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,25 +26,20 @@ function Dashboard() {
   const [reviewForm, setReviewForm] = useState({ id: "", customer_name: "", customer_image_url: "", rating: "5", review_text: "", is_visible: "true", display_order: "0" });
   const [reviewImage, setReviewImage] = useState<File | null>(null);
   const [reviewSaving, setReviewSaving] = useState(false);
-  const [whatsappNumber, setWhatsappNumber] = useState("");
-  const [savingWhatsapp, setSavingWhatsapp] = useState(false);
   const [error, setError] = useState("");
 
   const load = async () => {
     setLoading(true); setError("");
     try {
-      const [{ data: shippingData, error: shippingError }, { data: reviewData, error: reviewError }, { data: whatsappData, error: whatsappError }, dashboard] = await Promise.all([
+      const [{ data: shippingData, error: shippingError }, { data: reviewData, error: reviewError }, dashboard] = await Promise.all([
         supabase.from("shipping_rates").select("id,governorate,price,is_active").order("governorate"),
         supabase.from("customer_reviews").select("id,customer_name,customer_image_url,rating,review_text,is_visible,display_order,created_at,updated_at").order("display_order").order("created_at", { ascending: false }),
-        supabase.from("store_settings").select("value").eq("key", "whatsapp_order_number").maybeSingle(),
         dashboardStats(),
       ]);
       if (shippingError) throw shippingError;
       if (reviewError) throw reviewError;
-      if (whatsappError && !String(whatsappError.message || "").toLowerCase().includes("store_settings")) throw whatsappError;
       setRates((shippingData ?? []).map((r: any) => ({ ...r, price: Number(r.price ?? 0), is_active: Boolean(r.is_active) })));
       setReviews((reviewData ?? []) as CustomerReview[]);
-      setWhatsappNumber(String(whatsappData?.value ?? ""));
       setStats(dashboard);
     } catch (e) { setError(e instanceof Error ? e.message : "تعذر تحميل بيانات لوحة التحكم"); }
     finally { setLoading(false); }
@@ -57,27 +52,6 @@ function Dashboard() {
     const { error } = await supabase.from("shipping_rates").update({ price: Number(rate.price), is_active: rate.is_active }).eq("id", rate.id);
     if (error) setError(error.message);
     setSavingRate(null);
-  };
-
-  const saveWhatsapp = async () => {
-    const normalized = normalizeEgyptWhatsAppNumber(whatsappNumber);
-    if (!normalized || normalized.length < 12) {
-      setError("اكتب رقم واتساب مصري صحيح مثل 01100090629.");
-      return;
-    }
-    setSavingWhatsapp(true); setError("");
-    try {
-      const { error } = await supabase.from("store_settings").upsert(
-        { key: "whatsapp_order_number", value: normalized, updated_at: new Date().toISOString() },
-        { onConflict: "key" },
-      );
-      if (error) throw error;
-      setWhatsappNumber(normalized);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "تعذر حفظ رقم واتساب.");
-    } finally {
-      setSavingWhatsapp(false);
-    }
   };
 
   const saveReview = async (event: React.FormEvent) => {
@@ -116,13 +90,12 @@ function Dashboard() {
     <div className="grid gap-5 md:grid-cols-3"><Stat icon={<Package/>} title="المنتجات" value={stats.products}/><Stat icon={<Tags/>} title="التصنيفات" value={stats.categories}/><Stat icon={<ShoppingCart/>} title="الطلبات" value={stats.orders}/></div>
 
     <section className="mt-8">
-      <div className="mb-4"><h2 className="text-2xl font-extrabold">رقم واتساب استقبال الطلبات</h2><p className="mt-1 text-sm text-slate-400">الرقم الذي يفتح عليه واتساب عند تأكيد العميل للطلب. اكتبه بصيغة مصرية عادية أو دولية.</p></div>
+      <div className="mb-4"><h2 className="text-2xl font-extrabold">رقم واتساب استقبال الطلبات</h2><p className="mt-1 text-sm text-slate-400">هذا هو الرقم الثابت المرتبط بفورم طلبات العملاء، وتُرسل إليه جميع الطلبات.</p></div>
       <Card className="border-slate-800 bg-slate-900"><CardContent className="p-5 sm:p-6">
         <div className="flex flex-col gap-3 sm:flex-row">
-          <Input value={whatsappNumber} onChange={(e) => setWhatsappNumber(e.target.value)} inputMode="tel" placeholder="01100090629" className="border-slate-700 bg-slate-950" />
-          <Button disabled={savingWhatsapp} onClick={() => void saveWhatsapp()}>{savingWhatsapp ? "جاري الحفظ..." : "حفظ رقم واتساب"}</Button>
+          <Input value={DEFAULT_STORE_WHATSAPP_NUMBER} readOnly inputMode="tel" className="border-slate-700 bg-slate-950" />
         </div>
-        <p className="mt-3 text-xs text-slate-500">سيتم تحويله تلقائيًا إلى صيغة واتساب الدولية مثل 201100090629.</p>
+        <p className="mt-3 text-xs text-slate-500">الرقم المستخدم فعليًا في فورم الطلبات: 201093384952.</p>
       </CardContent></Card>
     </section>
 

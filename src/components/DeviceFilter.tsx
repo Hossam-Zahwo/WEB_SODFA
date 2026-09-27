@@ -12,6 +12,34 @@ type Props = {
   productModelIds?: Set<string>;
 };
 
-export function DeviceFilter({ series, models, selectedSeriesId, selectedModelId, onSeriesSelect, onModelSelect, productModelIds }: Props) {
-  return <div className="space-y-4"><SeriesFilter series={series} selectedSeriesId={selectedSeriesId} onSelect={(id) => { onSeriesSelect(id); onModelSelect(undefined); }} /><ModelFilter models={models} selectedModelId={selectedModelId} selectedSeriesId={selectedSeriesId} onSelect={onModelSelect} productModelIds={productModelIds} /></div>;
+export function DeviceFilter({
+  series,
+  models,
+  selectedSeriesId,
+  selectedModelId,
+  onSeriesSelect,
+  onModelSelect,
+  productModelIds,
+}: Props) {
+  return (
+    <div className="space-y-4">
+      <SeriesFilter
+        series={series}
+        selectedSeriesId={selectedSeriesId}
+        onSelect={(id) => {
+          onSeriesSelect(id);
+          onModelSelect(undefined);
+        }}
+      />
+      {selectedSeriesId && (
+        <ModelFilter
+          models={models}
+          selectedModelId={selectedModelId}
+          selectedSeriesId={selectedSeriesId}
+          onSelect={onModelSelect}
+          productModelIds={productModelIds}
+        />
+      )}
+    </div>
+  );
 }

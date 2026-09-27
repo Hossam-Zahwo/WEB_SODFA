@@ -180,13 +180,28 @@ export function ProductCard({
 export function ProductGrid({
   products,
   includeVariants = false,
+  selectedModelId,
 }: {
   products: StoreProduct[];
   includeVariants?: boolean;
+  selectedModelId?: string;
 }) {
   return (
     <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
       {products.flatMap((product) => {
+        if (selectedModelId) {
+          const matchingVariants = product.variants.filter((variant) => variant.modelId === selectedModelId);
+          if (matchingVariants.length) {
+            return matchingVariants.map((variant) => (
+              <ProductCard key={`${product.id}-${variant.id}`} product={product} variant={variant} />
+            ));
+          }
+          if (product.modelId === selectedModelId) {
+            return [<ProductCard key={product.id} product={product} />];
+          }
+          return [];
+        }
+
         const parent = <ProductCard key={product.id} product={product} />;
         if (!includeVariants || !product.variants.length) return [parent];
         return [

@@ -149,10 +149,10 @@ function ProductPage() {
 
             {product.variants.length > 0 && (
               <div className="mt-7">
-                <div className="flex items-center justify-between"><span className="text-xs tracking-widest text-subtle uppercase">اختيارات المنتج</span><span className="text-[11px] text-subtle">{product.variants.length} اختيار</span></div>
+                <div className="flex items-center justify-between"><span className="text-xs tracking-widest text-subtle uppercase">{t("product.variants")}</span><span className="text-[11px] text-subtle">{product.variants.length} {t("product.variantCount")}</span></div>
                 <div className="mt-3 grid gap-2 sm:grid-cols-2">
                   <button type="button" onClick={() => setSelectedVariantId(undefined)} className={cn("flex items-center gap-3 rounded-xl border p-3 text-start", !selectedVariant ? "border-primary bg-primary/10" : "border-border")}>
-                    <SmartImage src={product.images[0] || "/placeholder.svg"} alt={pick(product.name.ar, product.name.en)} className="h-12 w-12 shrink-0 rounded-lg" ratio="square" imgClassName="object-contain bg-white p-1"/><span className="min-w-0"><span className="block truncate text-sm font-semibold">{baseModelName}</span><span className="block truncate text-xs text-subtle">الموديل</span>{product.inStock && <span className="text-xs text-subtle">{price(product.price)}</span>}</span>
+                    <SmartImage src={product.images[0] || "/placeholder.svg"} alt={pick(product.name.ar, product.name.en)} className="h-12 w-12 shrink-0 rounded-lg" ratio="square" imgClassName="object-contain bg-white p-1"/><span className="min-w-0"><span className="block truncate text-sm font-semibold">{baseModelName}</span><span className="block truncate text-xs text-subtle">{t("product.model")}</span>{product.inStock && <span className="text-xs text-subtle">{price(product.price)}</span>}</span>
                   </button>
                   {product.variants.map((v) => <button type="button" key={v.id} onClick={() => chooseVariant(v)} className={cn("flex items-center gap-3 rounded-xl border p-3 text-start", selectedVariant?.id === v.id ? "border-primary bg-primary/10" : "border-border")}>
                     <SmartImage src={v.primaryImage || "/placeholder.svg"} alt={variantLabel(v)} className="h-12 w-12 shrink-0 rounded-lg bg-white" ratio="square" imgClassName="object-contain bg-white p-1"/><span className="min-w-0"><span className="block truncate text-sm font-semibold">{v.value || v.name}</span><span className="block truncate text-xs text-subtle">{variantTypeLabels[v.type || "other"]?.[lang] || (lang === "ar" ? "الاختلاف" : "Option")}</span>{v.inStock && <span className="text-xs text-subtle">{price(v.price)}</span>}</span>
@@ -173,7 +173,7 @@ function ProductPage() {
           </div>
         </div>
       </div>
-      {product.variants.length > 0 && <Section title="تفريعات المنتج"><div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{product.variants.map((v) => <ProductCard key={v.id} product={product} variant={v}/>)}</div></Section>}
+      {product.variants.length > 0 && <Section title={t("product.variants")}><div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{product.variants.map((v) => <ProductCard key={v.id} product={product} variant={v}/>)}</div></Section>}
       {related.length > 0 && <Section title={t("product.related")}><ProductGrid products={related}/></Section>}
     </>
   );

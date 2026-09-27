@@ -45,21 +45,34 @@ function CartPage() {
       return;
     }
 
+    // Reserve the popup immediately from the user's click. Waiting for Supabase
+    // before window.open can make browsers block WhatsApp as a popup.
+    const whatsappWindow = window.open("about:blank", "_blank", "noopener,noreferrer");
+
     try {
+      // Customer checkout always sends to the store's fixed order-receiving WhatsApp number.
       const whatsappNumber = await getStoreWhatsAppNumber();
-      if (!whatsappNumber) throw new Error("رقم واتساب استقبال الطلبات غير مضبوط من لوحة التحكم.");
-      const order = await createStoreOrder({
-        customer_name: name.trim(),
-        customer_phone: phone.trim(),
-        governorate,
-        address: address.trim(),
-        notes: notes.trim() || null,
-        items: lines.map((line) => ({ productId: line.productId, variantId: line.variantId ?? null, name: line.name.ar, variantName: line.variantName ?? null, qty: line.qty, price: line.price, image: line.image })),
-        subtotal,
-        shipping,
-        total,
-        status: "pending",
-      });
+
+      let orderId = "";
+      try {
+        const order = await createStoreOrder({
+          customer_name: name.trim(),
+          customer_phone: phone.trim(),
+          governorate,
+          address: address.trim(),
+          notes: notes.trim() || null,
+          items: lines.map((line) => ({ productId: line.productId, variantId: line.variantId ?? null, name: line.name.ar, variantName: line.variantName ?? null, qty: line.qty, price: line.price, image: line.image })),
+          subtotal,
+          shipping,
+          total,
+          status: "pending",
+        });
+        orderId = String(order.id).slice(0, 8);
+      } catch (orderError) {
+        // WhatsApp delivery must not be blocked by an unrelated order-DB/RPC error.
+        // The customer can still send the complete order details to the store.
+        console.error("Order record could not be saved; continuing with WhatsApp:", orderError);
+      }
 
       const items = lines.map((line, i) => {
         const variant = line.variantName ? ` — ${line.variantName}` : "";
@@ -68,7 +81,7 @@ function CartPage() {
 
       const message = [
         "طلب جديد من SODFA صدفة",
-        `رقم الطلب: #${String(order.id).slice(0, 8)}`,
+        orderId ? `رقم الطلب: #${orderId}` : "",
         "",
         `الاسم: ${name.trim()}`,
         `الموبايل: ${phone.trim()}`,
@@ -85,10 +98,17 @@ function CartPage() {
         `الإجمالي النهائي: ${price(total)}`,
       ].filter(Boolean).join("\n");
 
-      window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
+      const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+      if (whatsappWindow && !whatsappWindow.closed) {
+        whatsappWindow.location.href = whatsappUrl;
+      } else {
+        // Fallback for browsers/extensions that still block the reserved popup.
+        window.location.href = whatsappUrl;
+      }
       setSubmitted(true);
     } catch (e: any) {
-      setError(e?.message || "تعذر حفظ الطلب. تأكد من تشغيل SQL الخاص بـ SODFA ثم حاول مرة أخرى.");
+      if (whatsappWindow && !whatsappWindow.closed) whatsappWindow.close();
+      setError(e?.message || "تعذر تجهيز طلب واتساب. حاول مرة أخرى.");
     }
   };
 

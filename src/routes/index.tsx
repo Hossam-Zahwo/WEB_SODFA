@@ -75,10 +75,10 @@ function Index() {
         <DeviceFilter series={series} models={models} selectedSeriesId={selectedSeries} selectedModelId={selectedModel} onSeriesSelect={(id) => { setSelectedSeries(id); setSelectedModel(undefined); }} onModelSelect={setSelectedModel} productModelIds={modelIds} />
       </div>
       <Section title={t("home.best")} action={<ViewAll to="/products" label={t("home.viewAll")} />}>
-        {productsLoading ? <ProductSectionSkeleton /> : filteredBest.length ? <ProductGrid products={filteredBest} /> : <p className="py-10 text-center text-sm text-subtle">لا توجد منتجات حاليًا.</p>}
+        {productsLoading ? <ProductSectionSkeleton /> : selectedSeries && !selectedModel ? <p className="py-10 text-center text-sm text-subtle">{t("filter.chooseModel")}</p> : filteredBest.length ? <ProductGrid products={filteredBest} selectedModelId={selectedModel} /> : <p className="py-10 text-center text-sm text-subtle">{t("shop.empty")}</p>}
       </Section>
       <Section title={t("home.new")} action={<ViewAll to="/offers" label={t("home.viewAll")} />}>
-        {productsLoading ? <ProductSectionSkeleton /> : filteredNewest.length ? <ProductGrid products={filteredNewest} /> : <p className="py-10 text-center text-sm text-subtle">لا توجد منتجات جديدة حاليًا.</p>}
+        {productsLoading ? <ProductSectionSkeleton /> : selectedSeries && !selectedModel ? <p className="py-10 text-center text-sm text-subtle">{t("filter.chooseModel")}</p> : filteredNewest.length ? <ProductGrid products={filteredNewest} selectedModelId={selectedModel} /> : <p className="py-10 text-center text-sm text-subtle">{t("shop.empty")}</p>}
       </Section>
     </>
   );

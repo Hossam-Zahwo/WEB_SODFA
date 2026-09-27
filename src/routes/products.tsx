@@ -38,7 +38,14 @@ function ProductsPage() {
   useEffect(() => {
     setSelectedModel(modelParam);
     setSelectedSeries(seriesParam);
-  }, [modelParam]);
+  }, [modelParam, seriesParam]);
+
+  useEffect(() => {
+    if (!selectedSeries && selectedModel) {
+      const model = models.find((item) => item.id === selectedModel);
+      if (model?.series_id) setSelectedSeries(model.series_id);
+    }
+  }, [models, selectedModel, selectedSeries]);
 
   useEffect(() => {
     let alive = true;
@@ -50,7 +57,7 @@ function ProductsPage() {
         setModels(nextModels);
         setSeries(nextSeries);
       })
-      .catch((e) => alive && setError(e instanceof Error ? e.message : "تعذر تحميل المنتجات"))
+      .catch((e) => alive && setError(e instanceof Error ? e.message : t("shop.loadError")))
       .finally(() => alive && setLoading(false));
     return () => { alive = false; };
   }, []);
@@ -97,9 +104,9 @@ function ProductsPage() {
 
       <div className="mt-6 space-y-5">
         <div>
-          <div className="mb-3 text-xs font-semibold tracking-wide text-subtle">التصنيفات</div>
+          <div className="mb-3 text-xs font-semibold tracking-wide text-subtle">{t("shop.categories")}</div>
           <div className="flex flex-wrap gap-2">
-            <Link to="/products" search={{ q, cat: undefined, model: undefined, series: undefined }} className="rounded-full border border-border px-4 py-2 text-xs font-semibold hover:border-primary/40">كل التصنيفات</Link>
+            <Link to="/products" search={{ q, cat: undefined, model: undefined, series: undefined }} className="rounded-full border border-border px-4 py-2 text-xs font-semibold hover:border-primary/40">{t("shop.allCategories")}</Link>
             {categories.map((c) => (
               <Link key={c.id} to="/products" search={{ q, cat: c.slug, model: undefined, series: undefined }} className={`rounded-full border px-4 py-2 text-xs font-semibold transition ${cat === c.slug ? "border-primary bg-primary/10 text-primary-dark" : "border-border hover:border-primary/40"}`}>
                 {pick(c.name_ar, c.name_en)}
@@ -113,10 +120,12 @@ function ProductsPage() {
       {error && <p className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</p>}
 
       <div className="mt-8">
-        {list.length ? (
-          <ProductGrid products={list} />
+        {selectedSeries && !selectedModel ? (
+          <p className="py-16 text-center text-sm text-subtle">{t("filter.chooseModel")}</p>
+        ) : list.length ? (
+          <ProductGrid products={list} selectedModelId={selectedModel} />
         ) : (
-          <p className="py-16 text-center text-sm text-subtle">لا توجد منتجات مرتبطة بهذا الفلتر.</p>
+          <p className="py-16 text-center text-sm text-subtle">{t("shop.noFilterResults")}</p>
         )}
       </div>
     </div>

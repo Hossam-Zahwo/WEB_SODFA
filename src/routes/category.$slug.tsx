@@ -1,5 +1,5 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ProductGrid } from "@/components/ProductCard";
 import { DeviceFilter } from "@/components/DeviceFilter";
 import { useLang } from "@/lib/i18n";
@@ -31,6 +31,13 @@ function CategoryPage() {
   const [selectedModel, setSelectedModel] = useState<string | undefined>();
   const [selectedSeries, setSelectedSeries] = useState<string | undefined>();
 
+  useEffect(() => {
+    if (!selectedSeries && selectedModel) {
+      const model = data.models.find((item) => item.id === selectedModel);
+      if (model?.series_id) setSelectedSeries(model.series_id);
+    }
+  }, [data.models, selectedModel, selectedSeries]);
+
   const modelIds = useMemo(() => {
     const ids = new Set<string>();
     data.products.forEach((p) => {
@@ -56,7 +63,7 @@ function CategoryPage() {
       </div>
 
       <div className="mt-8">
-        {filtered.length ? <ProductGrid products={filtered} /> : <p className="py-16 text-center text-sm text-subtle">لا توجد منتجات مرتبطة بهذا الموديل.</p>}
+        {selectedSeries && !selectedModel ? <p className="py-16 text-center text-sm text-subtle">{t("filter.chooseModel")}</p> : filtered.length ? <ProductGrid products={filtered} selectedModelId={selectedModel} /> : <p className="py-16 text-center text-sm text-subtle">{t("filter.noProducts")}</p>}
       </div>
     </div>
   );

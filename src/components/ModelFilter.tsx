@@ -2,6 +2,7 @@ import { ChevronDown, Check } from "lucide-react";
 import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { DbModel } from "@/lib/db";
+import { useLang } from "@/lib/i18n";
 
 type ModelFilterProps = {
   models: DbModel[];
@@ -16,10 +17,11 @@ export function ModelFilter({
   models,
   selectedModelId,
   onSelect,
-  title = "فلتر حسب الموديل",
+  title,
   productModelIds,
   selectedSeriesId,
 }: ModelFilterProps) {
+  const { t, pick } = useLang();
   const [expanded, setExpanded] = useState(false);
 
   const visibleModels = useMemo(() => {
@@ -36,11 +38,11 @@ export function ModelFilter({
   const hasMore = visibleModels.length > 5;
 
   return (
-    <section className="rounded-3xl border border-border/70 bg-card/45 p-4 shadow-[0_18px_50px_-35px_rgba(65,27,78,.45)] sm:p-5" aria-label={title}>
+    <section className="rounded-3xl border border-border/70 bg-card/45 p-4 shadow-[0_18px_50px_-35px_rgba(65,27,78,.45)] sm:p-5" aria-label={title ?? t("filter.model.title")}>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-base font-bold sm:text-lg">{title}</h2>
-          <p className="mt-1 text-xs text-subtle">اختار موديل لعرض المنتجات الخاصة به فقط.</p>
+          <h2 className="text-base font-bold sm:text-lg">{title ?? t("filter.model.title")}</h2>
+          <p className="mt-1 text-xs text-subtle">{t("filter.model.sub")}</p>
         </div>
         <div className="flex items-center gap-2">
           {selectedModelId && (
@@ -49,7 +51,7 @@ export function ModelFilter({
               onClick={() => onSelect(undefined)}
               className="rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-subtle transition hover:border-primary/40 hover:text-foreground"
             >
-              إلغاء الفلتر
+              {t("filter.clear")}
             </button>
           )}
           {hasMore && (
@@ -58,7 +60,7 @@ export function ModelFilter({
               onClick={() => setExpanded((v) => !v)}
               className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/5 px-3 py-1.5 text-xs font-bold text-primary-dark transition hover:-translate-y-0.5 hover:bg-primary/10"
             >
-              {expanded ? "إخفاء الموديلات" : `عرض الكل (${visibleModels.length})`}
+              {expanded ? t("filter.hideModels") : `${t("filter.viewAllModels")} (${visibleModels.length})`}
               <ChevronDown className={cn("h-4 w-4 transition-transform duration-300", expanded && "rotate-180")} />
             </button>
           )}
@@ -84,7 +86,7 @@ export function ModelFilter({
               <span className="relative mx-auto block aspect-square max-w-[150px] overflow-hidden rounded-xl bg-white/40">
                 <img
                   src={model.image_url || "/placeholder.svg"}
-                  alt={model.name_ar || model.name_en}
+                  alt={pick(model.name_ar, model.name_en)}
                   loading="lazy"
                   className="h-full w-full object-contain p-2 transition-transform duration-500 ease-out group-hover:-translate-y-2"
                 />
@@ -94,7 +96,7 @@ export function ModelFilter({
                   </span>
                 )}
               </span>
-              <span className="mt-2 block truncate text-xs font-bold sm:text-sm">{model.name_ar || model.name_en}</span>
+              <span className="mt-2 block truncate text-xs font-bold sm:text-sm">{pick(model.name_ar, model.name_en)}</span>
               {model.name_en && model.name_ar && (
                 <span className="mt-0.5 block truncate text-[10px] text-subtle">{model.name_en}</span>
               )}
