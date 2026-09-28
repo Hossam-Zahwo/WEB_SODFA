@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Minus, Plus, Trash2, MapPin, Phone, User, MessageCircle, X, CheckCircle2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useCart } from "@/lib/cart";
-import { createStoreOrder, getStoreWhatsAppNumber, listShippingRates, openWhatsAppSmart, type ShippingRate } from "@/lib/db";
+import { createCustomerAccessToken, createStoreOrder, getLocalCustomerProfile, getStoreWhatsAppNumber, listShippingRates, openWhatsAppSmart, saveLocalCustomerProfile, type ShippingRate } from "@/lib/db";
 import { useLang } from "@/lib/i18n";
 
 export const Route = createFileRoute("/cart")({
@@ -19,7 +19,7 @@ const GOVERNORATES = [
 
 function CartPage() {
   const { t, price } = useLang();
-  const { lines, count, subtotal, setQty, remove } = useCart();
+  const { lines, count, subtotal, setQty, remove, clear } = useCart();
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -29,6 +29,30 @@ function CartPage() {
   const [error, setError] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [shippingRates, setShippingRates] = useState<ShippingRate[]>([]);
+  const [savedCustomer, setSavedCustomer] = useState(() => getLocalCustomerProfile());
+  const [useSavedCustomer, setUseSavedCustomer] = useState(true);
+  const [customerToken, setCustomerToken] = useState(() => getLocalCustomerProfile()?.accessToken || createCustomerAccessToken());
+
+  useEffect(() => {
+    const saved = getLocalCustomerProfile();
+    if (saved) {
+      setSavedCustomer(saved);
+      setCustomerToken(saved.accessToken);
+      setName(saved.name);
+      setPhone(saved.phone);
+      setGovernorate(saved.governorate);
+      setAddress(saved.address);
+      setNotes(saved.notes || "");
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      if (name.trim() || phone.trim() || governorate || address.trim()) {
+        localStorage.setItem("sodfa-customer-draft", JSON.stringify({ name, phone, governorate, address, notes }));
+      }
+    } catch {}
+  }, [name, phone, governorate, address, notes]);
 
   useEffect(() => {
     listShippingRates().then(setShippingRates).catch((error) => console.error("Shipping rates failed:", error));
@@ -66,8 +90,26 @@ function CartPage() {
           shipping,
           total,
           status: "pending",
-        });
+        }, customerToken);
         orderId = String(order.id).slice(0, 8);
+        const activeCustomerToken = order.customer_token || customerToken;
+        setCustomerToken(activeCustomerToken);
+        saveLocalCustomerProfile({
+          name: name.trim(),
+          phone: phone.trim(),
+          governorate,
+          address: address.trim(),
+          notes: notes.trim(),
+          accessToken: activeCustomerToken,
+        });
+        setSavedCustomer({
+          name: name.trim(),
+          phone: phone.trim(),
+          governorate,
+          address,
+          notes: notes.trim(),
+          accessToken: activeCustomerToken,
+        });
       } catch (orderError: any) {
         console.error("Order record could not be saved:", orderError);
         if (whatsappWindow && !whatsappWindow.closed) whatsappWindow.close();
@@ -99,6 +141,7 @@ function CartPage() {
       ].filter(Boolean).join("\n");
 
       openWhatsAppSmart(whatsappNumber, message, whatsappWindow);
+      clear();
       setSubmitted(true);
     } catch (e: any) {
       if (whatsappWindow && !whatsappWindow.closed) whatsappWindow.close();
@@ -117,6 +160,23 @@ function CartPage() {
     {checkoutOpen && <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/75 p-0 backdrop-blur-md sm:items-center sm:p-4" role="dialog" aria-modal="true">
       <div className="max-h-[94svh] w-full max-w-2xl overflow-y-auto rounded-t-[2rem] border border-white/10 bg-card p-5 shadow-2xl sm:max-h-[92vh] sm:rounded-3xl sm:p-8">
         <div className="flex items-start justify-between gap-4"><div><h2 className="text-xl font-bold sm:text-2xl">بيانات التوصيل</h2><p className="mt-1 text-sm leading-7 text-subtle">اكتب بياناتك، وإحنا نبعت تفاصيل الطلب على واتساب مباشرة.</p></div><button type="button" onClick={() => setCheckoutOpen(false)} className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-border text-subtle hover:text-foreground" aria-label="إغلاق"><X size={18}/></button></div>
+        {savedCustomer && useSavedCustomer && (
+          <div className="mt-5 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="font-bold">بياناتك محفوظة على جهازك</p>
+                <p className="mt-1 text-xs leading-6 text-subtle">تحب تستخدم نفس بيانات التوصيل للطلب الجديد؟</p>
+              </div>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => {
+                  setName(savedCustomer.name); setPhone(savedCustomer.phone); setGovernorate(savedCustomer.governorate);
+                  setAddress(savedCustomer.address); setNotes(savedCustomer.notes || ""); setCustomerToken(savedCustomer.accessToken);
+                }} className="rounded-xl bg-sodfa px-4 py-2 text-xs font-bold text-white">استخدم نفس البيانات</button>
+                <button type="button" onClick={() => { setUseSavedCustomer(false); setName(""); setPhone(""); setGovernorate(""); setAddress(""); setNotes(""); setCustomerToken(createCustomerAccessToken()); }} className="rounded-xl border border-border px-4 py-2 text-xs font-bold">تعديل البيانات</button>
+              </div>
+            </div>
+          </div>
+        )}
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
           <label className="space-y-2 text-sm sm:col-span-2"><span className="flex items-center gap-2 font-semibold"><User size={15}/> الاسم بالكامل *</span><input value={name} onChange={(e) => setName(e.target.value)} placeholder="مثال: أحمد محمد" className="h-12 w-full rounded-xl border border-border bg-input px-4 outline-none focus:border-primary"/></label>
           <label className="space-y-2 text-sm"><span className="flex items-center gap-2 font-semibold"><Phone size={15}/> رقم الموبايل *</span><input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" placeholder="01xxxxxxxxx" className="h-12 w-full rounded-xl border border-border bg-input px-4 outline-none focus:border-primary"/></label>

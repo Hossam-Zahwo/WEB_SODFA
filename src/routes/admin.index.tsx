@@ -18,7 +18,7 @@ const GOVERNORATES = [
 ];
 
 function Dashboard() {
-  const [stats, setStats] = useState({ products: 0, categories: 0, orders: 0 });
+  const [stats, setStats] = useState({ products: 0, categories: 0, orders: 0, totalValue: 0 });
   const [rates, setRates] = useState<ShippingRate[]>([]);
   const [reviews, setReviews] = useState<CustomerReview[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,7 +87,12 @@ function Dashboard() {
   return <AdminGuard><AdminPage>
     <div className="mb-8 flex items-center justify-between gap-4"><div><h1 className="text-3xl font-extrabold">لوحة التحكم</h1><p className="mt-1 text-slate-400">إدارة المتجر، أسعار الشحن وتقييمات العملاء من مكان واحد.</p></div><Button variant="outline" className="border-slate-700 bg-transparent" onClick={load}><RefreshCw size={17}/>تحديث</Button></div>
     {error && <div className="mb-5 rounded-xl border border-red-900 bg-red-950/40 p-3 text-sm text-red-300">{error}</div>}
-    <div className="grid gap-5 md:grid-cols-3"><Stat icon={<Package/>} title="المنتجات" value={stats.products}/><Stat icon={<Tags/>} title="التصنيفات" value={stats.categories}/><Stat icon={<ShoppingCart/>} title="الطلبات" value={stats.orders}/></div>
+    <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+      <Stat icon={<Package/>} title="المنتجات" value={stats.products}/>
+      <Stat icon={<Tags/>} title="التصنيفات" value={stats.categories}/>
+      <Stat icon={<ShoppingCart/>} title="عدد الطلبات" value={stats.orders}/>
+      <Stat icon={<ShoppingCart/>} title="إجمالي قيمة الطلبات" value={stats.totalValue}/>
+    </div>
 
     <section className="mt-8">
       <div className="mb-4"><h2 className="text-2xl font-extrabold">واتساب استقبال الطلبات</h2><p className="mt-1 text-sm text-slate-400">رقم استقبال طلبات العملاء أصبح له صفحة إعدادات مستقلة لتغيير كود الدولة ورقم الهاتف.</p></div>
@@ -120,4 +125,4 @@ function Dashboard() {
   </AdminPage></AdminGuard>;
 }
 function Field({ label, children }: { label: string; children: React.ReactNode }) { return <label className="space-y-2 text-sm"><span className="block text-slate-300">{label}</span>{children}</label>; }
-function Stat({ icon, title, value }: { icon: React.ReactNode; title: string; value: number }) { return <Card className="border-slate-800 bg-slate-900"><CardContent className="flex items-center gap-4 p-6"><div className="grid h-12 w-12 place-items-center rounded-2xl bg-slate-800">{icon}</div><div><div className="text-sm text-slate-400">{title}</div><div className="mt-1 text-3xl font-extrabold">{value}</div></div></CardContent></Card>; }
+function Stat({ icon, title, value }: { icon: React.ReactNode; title: string; value: number }) { const isMoney = title.includes("قيمة"); return <Card className="border-slate-800 bg-slate-900"><CardContent className="flex items-center gap-4 p-6"><div className="grid h-12 w-12 place-items-center rounded-2xl bg-slate-800">{icon}</div><div><div className="text-sm text-slate-400">{title}</div><div className="mt-1 text-3xl font-extrabold">{isMoney ? `${Number(value).toLocaleString("ar-EG")} جنيه` : value}</div></div></CardContent></Card>; }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Menu, Search, ShoppingBag, X } from "lucide-react";
+import { ClipboardList, Menu, Search, ShoppingBag, X } from "lucide-react";
 
 import { useLang } from "@/lib/i18n";
 import { useCart } from "@/lib/cart";
@@ -55,6 +55,7 @@ export function Header() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [q, setQ] = useState("");
   const [categories, setCategories] = useState<DbCategory[]>([]);
+  const [hasCustomer, setHasCustomer] = useState(false);
 
   const pathname = useRouterState({
     select: (s) => s.location.pathname,
@@ -63,6 +64,15 @@ export function Header() {
   useEffect(() => {
     setMenuOpen(false);
     setSearchOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("sodfa-customer-profile");
+      setHasCustomer(Boolean(raw && JSON.parse(raw)?.accessToken && JSON.parse(raw)?.phone));
+    } catch {
+      setHasCustomer(false);
+    }
   }, [pathname]);
 
   useEffect(() => {
@@ -277,6 +287,17 @@ export function Header() {
             <Search className="h-5 w-5" />
           </button>
 
+          {hasCustomer && (
+            <Link
+              to="/orders"
+              aria-label="طلباتي"
+              className="hidden h-10 items-center gap-2 rounded-full px-3 text-xs font-bold text-muted-foreground transition-all hover:bg-card hover:text-foreground xl:flex"
+            >
+              <ClipboardList className="h-4 w-4" />
+              طلباتي
+            </Link>
+          )}
+
           {/* Cart */}
           <Link
             to="/cart"
@@ -420,6 +441,15 @@ export function Header() {
           "
         >
           <nav className="space-y-1">
+            {hasCustomer && (
+              <Link
+                to="/orders"
+                onClick={() => setMenuOpen(false)}
+                className="flex min-h-12 items-center gap-2 rounded-xl px-3 py-2 text-base font-bold text-foreground transition-colors hover:bg-card hover:text-sodfa"
+              >
+                <ClipboardList size={18} /> طلباتي
+              </Link>
+            )}
             {categories.map((category) => (
               <Link
                 key={category.id}

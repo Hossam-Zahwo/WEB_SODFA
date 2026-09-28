@@ -28,6 +28,7 @@ type Ctx = {
   }) => void;
   setQty: (key: string, qty: number) => void;
   remove: (key: string) => void;
+  clear: () => void;
 };
 
 const CartContext = createContext<Ctx | null>(null);
@@ -123,13 +124,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const remove = useCallback((key: string) => setLines((prev) => prev.filter((l) => l.key !== key)), []);
+  const clear = useCallback(() => setLines([]), []);
 
   const value = useMemo<Ctx>(() => ({
     lines,
     count: lines.reduce((s, l) => s + l.qty, 0),
     subtotal: lines.reduce((s, l) => s + l.qty * l.price, 0),
-    add, setQty, remove,
-  }), [lines, add, setQty, remove]);
+    add, setQty, remove, clear,
+  }), [lines, add, setQty, remove, clear]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

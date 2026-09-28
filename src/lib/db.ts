@@ -146,12 +146,14 @@ export type StoreProduct = {
 };
 
 export async function dashboardStats() {
-  const [{ count: products }, { count: categories }, { count: orders }] = await Promise.all([
+  const [{ count: products }, { count: categories }, { data: orderRows, error: orderError }] = await Promise.all([
     supabase.from("products").select("id", { count: "exact", head: true }),
     supabase.from("categories").select("id", { count: "exact", head: true }),
-    supabase.from("orders").select("id", { count: "exact", head: true }),
+    supabase.from("orders").select("id,total,total_amount"),
   ]);
-  return { products: products ?? 0, categories: categories ?? 0, orders: orders ?? 0 };
+  if (orderError) throw orderError;
+  const totalValue = (orderRows || []).reduce((sum: number, row: any) => sum + Number(row.total ?? row.total_amount ?? 0), 0);
+  return { products: products ?? 0, categories: categories ?? 0, orders: orderRows?.length ?? 0, totalValue };
 }
 
 export async function listProducts() {
@@ -705,8 +707,72 @@ export type StoreOrder = {
   created_at: string;
 };
 
-export async function createStoreOrder(payload: Omit<StoreOrder, "id" | "created_at" | "review_requested_at">) {
-  const { data, error } = await supabase.rpc("create_public_order", {
+export type CustomerLocalProfile = {
+  name: string;
+  phone: string;
+  governorate: string;
+  address: string;
+  notes?: string;
+  accessToken: string;
+};
+
+export type CustomerOrderItem = {
+  id: string;
+  product_id: string;
+  variant_id: string | null;
+  product_name: string;
+  variant_name: string | null;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+  image_url?: string | null;
+};
+
+export type CustomerOrder = {
+  id: string;
+  order_number: string;
+  status: string;
+  subtotal: number;
+  shipping: number;
+  total: number;
+  customer_name: string;
+  customer_phone: string;
+  governorate: string;
+  address: string;
+  notes: string | null;
+  created_at: string;
+  items: CustomerOrderItem[];
+};
+
+export function normalizeCustomerPhone(phone: string) {
+  return String(phone || "").replace(/\D/g, "");
+}
+
+export function getLocalCustomerProfile(): CustomerLocalProfile | null {
+  try {
+    const raw = localStorage.getItem("sodfa-customer-profile");
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed?.phone || !parsed?.accessToken) return null;
+    return parsed as CustomerLocalProfile;
+  } catch {
+    return null;
+  }
+}
+
+export function saveLocalCustomerProfile(profile: CustomerLocalProfile) {
+  localStorage.setItem("sodfa-customer-profile", JSON.stringify(profile));
+}
+
+export function createCustomerAccessToken() {
+  return `${crypto.randomUUID()}${crypto.randomUUID()}`.replaceAll("-", "");
+}
+
+export async function createStoreOrder(
+  payload: Omit<StoreOrder, "id" | "created_at" | "review_requested_at">,
+  customerToken: string,
+) {
+  const { data, error } = await supabase.rpc("create_public_order_v2", {
     p_customer_name: payload.customer_name,
     p_customer_phone: payload.customer_phone,
     p_governorate: payload.governorate,
@@ -716,11 +782,21 @@ export async function createStoreOrder(payload: Omit<StoreOrder, "id" | "created
     p_subtotal: payload.subtotal,
     p_shipping: payload.shipping,
     p_total: payload.total,
+    p_customer_token: customerToken,
   });
   if (error) throw error;
   const row = Array.isArray(data) ? data[0] : data;
   if (!row?.id) throw new Error("ORDER_CREATE_FAILED");
-  return row as { id: string; created_at: string };
+  return row as { id: string; created_at: string; customer_token: string };
+}
+
+export async function getMyOrders(profile: CustomerLocalProfile) {
+  const { data, error } = await supabase.rpc("get_customer_orders", {
+    p_customer_phone: profile.phone,
+    p_customer_token: profile.accessToken,
+  });
+  if (error) throw error;
+  return (Array.isArray(data) ? data : []) as CustomerOrder[];
 }
 
 export async function getReviewRequest(token: string) {
@@ -729,26 +805,44 @@ export async function getReviewRequest(token: string) {
   return (Array.isArray(data) ? data[0] : data) as any;
 }
 
-export async function submitCustomerReview(payload: {
-  orderId: string;
-  token: string;
-  customerName: string;
-  rating: number;
-  reviewText: string;
-  imageUrl?: string | null;
+export async function submitCustomerProductReview(payload: {
+  orderId: string; token: string; orderItemId: string; productId: string; variantId?: string | null;
+  customerName: string; rating: number; reviewText: string; imageUrl?: string | null;
 }) {
-  const { data, error } = await supabase.rpc("submit_customer_review_once", {
-    p_order_id: payload.orderId,
-    p_token: payload.token,
-    p_customer_name: payload.customerName,
-    p_rating: payload.rating,
-    p_review_text: payload.reviewText,
-    p_image_url: payload.imageUrl ?? null,
+  const { data, error } = await supabase.rpc("submit_customer_product_review", {
+    p_order_id: payload.orderId, p_token: payload.token, p_order_item_id: payload.orderItemId,
+    p_product_id: payload.productId, p_variant_id: payload.variantId ?? null,
+    p_customer_name: payload.customerName, p_rating: payload.rating,
+    p_review_text: payload.reviewText, p_image_url: payload.imageUrl ?? null,
   });
   if (error) throw error;
   return data;
 }
 
+export async function submitCustomerServiceReview(payload: {
+  orderId: string; token: string; customerName: string; rating: number; reviewText: string; imageUrl?: string | null;
+}) {
+  const { data, error } = await supabase.rpc("submit_customer_service_review", {
+    p_order_id: payload.orderId, p_token: payload.token, p_customer_name: payload.customerName,
+    p_rating: payload.rating, p_review_text: payload.reviewText, p_image_url: payload.imageUrl ?? null,
+  });
+  if (error) throw error;
+  return data;
+}
+
+
+
+export async function listProductReviews(productId: string) {
+  const { data, error } = await supabase
+    .from("customer_reviews")
+    .select("id,customer_name,rating,review_text,image_url,created_at,product_id,variant_id")
+    .eq("product_id", productId)
+    .eq("review_type", "product")
+    .eq("is_visible", true)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
 export async function uploadCustomerReviewImage(file: File, token: string) {
   const safeExt = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
   const path = `review/${token}-${crypto.randomUUID()}.${safeExt}`;

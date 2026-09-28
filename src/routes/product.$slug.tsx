@@ -1,12 +1,12 @@
 import { createFileRoute, notFound, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Check, ChevronLeft, ChevronRight, Minus, Plus, ShieldCheck, Truck, Layers3 } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Minus, Plus, ShieldCheck, Truck, Layers3, Star } from "lucide-react";
 import { SmartImage } from "@/components/SmartImage";
 import { ProductCard, ProductGrid } from "@/components/ProductCard";
 import { Section } from "@/components/Section";
 import { useLang } from "@/lib/i18n";
 import { useCart } from "@/lib/cart";
-import { getStoreProduct, listStoreProducts, type StoreVariant } from "@/lib/db";
+import { getStoreProduct, listProductReviews, listStoreProducts, type StoreVariant } from "@/lib/db";
 import { cn } from "@/lib/utils";
 
 type Search = { variant?: string };
@@ -47,8 +47,15 @@ function ProductPage() {
   const [paused, setPaused] = useState(false);
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
+  const [reviews, setReviews] = useState<any[]>([]);
 
   useEffect(() => setSelectedVariantId(variantParam), [variantParam]);
+
+  useEffect(() => {
+    let alive = true;
+    listProductReviews(product.id).then((data) => { if (alive) setReviews(data); }).catch(() => { if (alive) setReviews([]); });
+    return () => { alive = false; };
+  }, [product.id]);
 
   const gallery = useMemo(() => {
     // Parent product and each variant have completely independent galleries.
@@ -173,6 +180,22 @@ function ProductPage() {
           </div>
         </div>
       </div>
+      <Section title={`تقييمات المنتج (${reviews.length})`}>
+        {reviews.length === 0 ? (
+          <div className="rounded-2xl border border-border bg-card p-6 text-center text-sm text-subtle">لسه مفيش تقييمات منشورة للمنتج.</div>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2">
+            {reviews.map((r) => <article key={r.id} className="rounded-2xl border border-border bg-card p-5">
+              <div className="flex items-center justify-between gap-3">
+                <div><p className="font-bold">{r.customer_name || "عميل SODFA"}</p><p className="mt-1 text-xs text-subtle">{r.created_at ? new Date(r.created_at).toLocaleDateString("ar-EG") : ""}</p></div>
+                <div className="flex" dir="ltr">{[1,2,3,4,5].map((n) => <Star key={n} size={15} className={n <= Number(r.rating) ? "fill-amber-400 text-amber-400" : "text-slate-500"}/>)}</div>
+              </div>
+              {r.review_text && <p className="mt-4 text-sm leading-7 text-muted-foreground">{r.review_text}</p>}
+              {r.image_url && <img src={r.image_url} alt="" className="mt-4 h-28 w-28 rounded-xl object-cover bg-white"/>}
+            </article>)}
+          </div>
+        )}
+      </Section>
       {product.variants.length > 0 && <Section title={t("product.variants")}><div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{product.variants.map((v) => <ProductCard key={v.id} product={product} variant={v}/>)}</div></Section>}
       {related.length > 0 && <Section title={t("product.related")}><ProductGrid products={related}/></Section>}
     </>

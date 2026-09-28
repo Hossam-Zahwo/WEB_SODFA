@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import {
-  ChevronDown, ChevronRight, GripVertical, ImagePlus, Plus, Trash2, Pencil, Copy,
+  ChevronDown, ChevronRight, GripVertical, ImagePlus, Plus, Trash2, Pencil, Copy, Search,
   RefreshCw, Star, X, Upload, Images, Eye, EyeOff, Save, ArrowUp, ArrowDown, Sparkles, Wand2, Check,
 } from "lucide-react";
 import { AdminGuard } from "@/components/AdminGuard";
@@ -116,6 +116,7 @@ function ProductsAdmin() {
   const [generatedCodes, setGeneratedCodes] = useState({ sku: "", barcode: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [productSearch, setProductSearch] = useState("");
   const [cloneProgress, setCloneProgress] = useState<{ active: boolean; percent: number; title: string; detail: string }>({ active: false, percent: 0, title: "", detail: "" });
   const [hasVariants, setHasVariants] = useState(false);
   const [drafts, setDrafts] = useState<VariantDraft[]>([]);
@@ -167,6 +168,19 @@ function ProductsAdmin() {
     });
     return map;
   }, [variants]);
+
+  const filteredItems = useMemo(() => {
+    const q = productSearch.trim().toLowerCase();
+    if (!q) return items;
+    return items.filter((p) => {
+      const variantsForProduct = grouped.get(p.id) || [];
+      const haystack = [
+        p.name_ar, p.name_en, p.sku, p.barcode, p.slug,
+        ...variantsForProduct.flatMap((v) => [v.variant_name, v.variant_type, v.variant_value, v.sku, v.barcode, v.name_ar, v.name_en]),
+      ].filter(Boolean).join(" ").toLowerCase();
+      return haystack.includes(q);
+    });
+  }, [items, grouped, productSearch]);
 
   const getQuickValues = (id: string, price: number | null | undefined, stock: number | null | undefined) =>
     quickEdits[id] || { price: price == null ? "" : String(price), stock: stock == null ? "0" : String(stock) };
@@ -1061,9 +1075,13 @@ function ProductsAdmin() {
                   onChange={(e) => setSelectedIds(e.target.checked ? new Set(items.map((p) => p.id)) : new Set())}
                   className="h-4 w-4 accent-white"
                 />
-                <div><h2 className="font-black text-white">Products</h2><p className="text-xs text-slate-500">{items.length} منتج {selectedIds.size ? `• ${selectedIds.size} محدد` : ""}</p></div>
+                <div><h2 className="font-black text-white">Products</h2><p className="text-xs text-slate-500">{filteredItems.length} منتج {selectedIds.size ? `• ${selectedIds.size} محدد` : ""}</p></div>
               </div>
               <div className="flex flex-wrap items-center gap-2">
+                <div className="relative min-w-[260px]">
+                  <Search className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-500" size={16}/>
+                  <input value={productSearch} onChange={(e) => setProductSearch(e.target.value)} placeholder="بحث بالاسم أو Barcode أو SKU" className="h-10 w-full rounded-xl border border-slate-700 bg-slate-900 pe-9 ps-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-violet-500"/>
+                </div>
                 {!quickEditMode && <Button type="button" variant="outline" onClick={startQuickEdit} disabled={loading} className="border-violet-500/40 bg-violet-500/10 text-white hover:bg-violet-500/20"><Pencil size={15}/> تعديل السعر والمخزون</Button>}
                 {quickEditMode && <>
                   <Button type="button" onClick={() => void saveQuickEdits()} disabled={quickSaving} className="bg-white text-slate-950 hover:bg-slate-100"><Save size={15}/> {quickSaving ? "جاري حفظ التعديلات..." : "حفظ التعديلات"}</Button>
@@ -1076,7 +1094,7 @@ function ProductsAdmin() {
               <table className="w-full min-w-[920px] text-sm">
                 <thead className="bg-slate-900 text-slate-400"><tr><th className="p-4 text-right">Product</th><th className="p-4 text-right">Barcode</th><th className="p-4 text-right">Price</th><th className="p-4 text-right">Stock</th><th className="p-4 text-right">Variants</th><th className="p-4 text-right">Actions</th></tr></thead>
                 <tbody>
-                  {items.map((p) => {
+                  {filteredItems.map((p) => {
                     const vs = grouped.get(p.id) || [];
                     return <Fragment key={p.id}>
                       <tr className="border-t border-slate-800 bg-slate-950 hover:bg-slate-900/70">
