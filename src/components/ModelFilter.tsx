@@ -27,9 +27,7 @@ export function ModelFilter({
   const visibleModels = useMemo(() => {
     const filtered = models.filter((m) => {
       if (selectedSeriesId && m.series_id !== selectedSeriesId) return false;
-      // Models are structural children of the selected series, not product-availability filters.
-      // Keep every model visible even when it currently has no products.
-      return true;
+      return productModelIds ? productModelIds.has(m.id) : true;
     });
     return filtered;
   }, [models, productModelIds, selectedSeriesId]);
@@ -79,18 +77,18 @@ export function ModelFilter({
               onClick={() => onSelect(active ? undefined : model.id)}
               aria-pressed={active}
               className={cn(
-                "group relative min-w-0 overflow-hidden rounded-2xl bg-transparent p-2.5 text-center transition-all duration-300 ease-out",
+                "group relative z-0 min-w-0 overflow-visible rounded-2xl bg-transparent p-1.5 text-center transition-all duration-300 ease-out",
                 active
-                  ? "bg-primary/8 shadow-[0_16px_35px_-24px_rgba(142,42,168,.75)]"
-                  : "hover:-translate-y-1 hover:bg-primary/[0.03] hover:shadow-[0_16px_35px_-25px_rgba(80,32,95,.45)]",
+                  ? "bg-primary/8 shadow-[0_16px_35px_-24px_rgba(142,42,168,.30)]"
+                  : "hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-28px_rgba(80,32,95,.38)]",
               )}
             >
-              <span className="relative mx-auto block aspect-square max-w-[150px] overflow-hidden rounded-xl bg-white/40">
+              <span className="relative z-0 mx-auto block aspect-square max-w-[170px] overflow-visible rounded-xl bg-white/25">
                 <img
                   src={model.image_url || "/placeholder.svg"}
                   alt={pick(model.name_ar, model.name_en)}
                   loading="lazy"
-                  className="h-full w-full object-contain p-2 transition-transform duration-500 ease-out group-hover:-translate-y-2"
+                  className="h-full w-full object-contain p-1 transition-transform duration-500 ease-out relative z-0 group-hover:z-30 group-hover:-translate-y-2 group-hover:scale-[1.045]"
                 />
                 {active && (
                   <span className="absolute end-1.5 top-1.5 grid h-6 w-6 place-items-center rounded-full bg-primary text-white shadow-lg">

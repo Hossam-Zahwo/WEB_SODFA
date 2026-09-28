@@ -3,8 +3,10 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { ProductCard } from "./ProductCard";
 import { SmartImage } from "./SmartImage";
 import { useLang } from "@/lib/i18n";
-import type { StoreProduct } from "@/lib/db";
+import type { StoreProduct, StoreVariant } from "@/lib/db";
 import { cn } from "@/lib/utils";
+
+type ShowcaseCard = { product: StoreProduct; variant?: StoreVariant };
 
 function shuffle<T>(items: T[]) {
   const next = [...items];
@@ -17,11 +19,15 @@ function shuffle<T>(items: T[]) {
 
 export function HomeProductShowcase({ products }: { products: StoreProduct[] }) {
   const { dir, t } = useLang();
-  const [cards, setCards] = useState<StoreProduct[]>([]);
+  const [cards, setCards] = useState<ShowcaseCard[]>([]);
   const [carouselIndex, setCarouselIndex] = useState(0);
 
   useEffect(() => {
-    const nextCards = shuffle(products).slice(0, Math.min(16, products.length));
+    const allCards: ShowcaseCard[] = products.flatMap((product) => [
+      { product },
+      ...product.variants.map((variant) => ({ product, variant })),
+    ]);
+    const nextCards = shuffle(allCards).slice(0, Math.min(20, allCards.length));
     setCards(nextCards);
     setCarouselIndex(0);
   }, [products]);
@@ -89,9 +95,9 @@ export function HomeProductShowcase({ products }: { products: StoreProduct[] }) 
                   pointerEvents: pageIndex === carouselIndex ? "auto" : "none",
                 }}
               >
-                {pageProducts.map((p) => (
-                  <div key={`${pageIndex}-${p.id}`} className="min-w-0">
-                    <ProductCard product={p} imageRatio="portrait" imageFit="contain" />
+                {pageProducts.map(({ product, variant }) => (
+                  <div key={`${pageIndex}-${product.id}-${variant?.id ?? "parent"}`} className="min-w-0">
+                    <ProductCard product={product} variant={variant} imageRatio="portrait" imageFit="contain" />
                   </div>
                 ))}
               </div>
@@ -118,7 +124,13 @@ export function HomeProductShowcase({ products }: { products: StoreProduct[] }) 
 export function HomeProductImageSlider({ products }: { products: StoreProduct[] }) {
   const { pick, t } = useLang();
   const images = useMemo(() => {
-    const urls = products.flatMap((p) => p.images.map((src) => ({ src, name: pick(p.name.ar, p.name.en) })));
+    const urls = products.flatMap((p) => [
+      ...p.images.map((src) => ({ src, name: pick(p.name.ar, p.name.en) })),
+      ...p.variants.flatMap((variant) => variant.images.map((src) => ({
+        src,
+        name: pick(variant.nameAr || variant.value || p.name.ar, variant.nameEn || variant.value || p.name.en),
+      }))),
+    ]);
     return urls.filter((x, i, a) => a.findIndex((y) => y.src === x.src) === i);
   }, [products, pick]);
 

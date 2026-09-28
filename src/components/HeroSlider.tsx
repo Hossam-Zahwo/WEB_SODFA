@@ -153,7 +153,7 @@ export function HeroSlider() {
 
   return (
     <section className="relative w-full overflow-hidden bg-white text-[#17134f]">
-      <div className="relative mx-auto w-full max-w-[1667px] aspect-[1667/943] min-h-[620px] sm:min-h-0">
+      <div className="relative mx-auto hidden w-full max-w-[1667px] aspect-[1667/943] min-h-[620px] sm:min-h-0 lg:block">
 
         {/* Hero images */}
         {slides.map((s, i) => (
@@ -283,31 +283,89 @@ export function HeroSlider() {
         </div>
       </div>
 
-      {/* Mobile */}
-      <div className="grid grid-cols-2 gap-3 bg-white px-4 py-5 lg:hidden">
-        {benefits.map((b) => {
-          const Icon = b.icon;
-
-          return (
-            <div
-              key={`mobile-${b.t}`}
-              className="text-center"
-              dir="rtl"
-            >
-              <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-[#eee6ff] text-[#4820ae]">
-                <Icon className="h-5 w-5" />
-              </span>
-
-              <div className="mt-2 text-sm font-bold text-[#17134f]">
-                {t(b.t)}
-              </div>
-
-              <div className="mt-1 text-[11px] leading-6 text-[#665e90]">
-                {t(b.s)}
-              </div>
+      {/* Mobile: نفس تكوين Hero الديسكتوب داخل السلايدر نفسه، مع مقاسات متجاوبة */}
+      <div className="lg:hidden relative mx-auto w-full aspect-[1/1.05] min-h-[430px] overflow-hidden bg-white">
+        {slides.map((s, i) => (
+          <img
+            key={`mobile-image-${s.to}`}
+            src={s.image}
+            alt=""
+            aria-hidden={i !== index}
+            className={cn(
+              "absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-[1000ms] ease-out",
+              i === index ? "opacity-100" : "pointer-events-none opacity-0",
+            )}
+          />
+        ))}
+        <div key={`mobile-${index}`} className="absolute inset-0" dir="rtl">
+          <div className="absolute inset-x-[5%] top-[5%] text-center">
+            <div className="mx-auto flex items-center justify-center gap-2 text-[9px] font-semibold text-[#432493]">
+              <span className="h-px w-6 rounded-full bg-[#7135d5]" />
+              <span>{t(slide.label)}</span>
+              <span className="h-px w-6 rounded-full bg-[#7135d5]" />
             </div>
-          );
-        })}
+            <h1 className="mx-auto mt-2 max-w-[88%] text-[clamp(21px,7vw,34px)] font-black leading-[1.12] tracking-[-0.04em] text-[#17134f]">
+              {t(slide.title)}
+            </h1>
+            <p className="mx-auto mt-1.5 max-w-[82%] text-[10px] font-medium leading-5 text-[#655d91]">
+              {t(slide.sub)}
+            </p>
+            <div className="mt-3 flex items-center justify-center gap-2">
+              <Link
+                to="/category/$slug"
+                params={{ slug: slide.to }}
+                className="inline-flex h-9 min-w-[112px] items-center justify-center gap-1.5 rounded-full bg-gradient-to-l from-[#4f1fc4] via-[#7429ca] to-[#be42ce] px-3 text-[10px] font-bold text-white shadow-[0_8px_20px_rgba(117,45,202,.22)]"
+              >
+                {t("hero.cta")}<Arrow className="h-3 w-3" />
+              </Link>
+              <Link
+                to="/categories"
+                className="inline-flex h-9 min-w-[112px] items-center justify-center rounded-full border border-[#9b5de0] bg-white/65 px-3 text-[10px] font-bold text-[#6830c5] backdrop-blur-sm"
+              >
+                {t("hero.cta2")}
+              </Link>
+            </div>
+          </div>
+
+          {benefits.map((b, i) => {
+            const Icon = b.icon;
+            const positions = [
+              { left: "4%", top: "50%" },
+              { left: "4%", bottom: "9%" },
+              { right: "4%", top: "50%" },
+              { right: "4%", bottom: "9%" },
+            ];
+            const pos = positions[i];
+            return (
+              <div
+                key={`mobile-benefit-${b.t}`}
+                className="absolute w-[25%] text-center"
+                style={pos}
+              >
+                <span className="mx-auto grid h-10 w-10 place-items-center rounded-full bg-[rgba(212,194,255,.72)] text-[#4820ae] shadow-[0_6px_18px_rgba(113,53,213,.12)] backdrop-blur-sm">
+                  <Icon className="h-5 w-5" />
+                </span>
+                <span className="mt-1 block text-[9px] font-bold leading-[1.3] text-[#17134f]">{t(b.t)}</span>
+                <span className="mx-auto mt-0.5 block max-w-[110px] text-[7px] font-medium leading-[1.4] text-[#665e90]">{t(b.s)}</span>
+              </div>
+            );
+          })}
+
+          <div className="absolute bottom-[3.5%] left-1/2 flex -translate-x-1/2 items-center gap-1.5">
+            {slides.map((s, i) => (
+              <button
+                key={`mobile-dot-${s.to}`}
+                type="button"
+                onClick={() => setIndex(i)}
+                aria-label={`${t("slider.slide")} ${i + 1}`}
+                className={cn(
+                  "h-1.5 rounded-full transition-all duration-500",
+                  i === index ? "w-10 bg-[#7135d5]" : "w-5 bg-[#d5cdea]",
+                )}
+              />
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   );

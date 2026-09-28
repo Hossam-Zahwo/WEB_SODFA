@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import {
-  ChevronDown, ChevronRight, GripVertical, ImagePlus, Plus, Trash2, Pencil,
+  ChevronDown, ChevronRight, GripVertical, ImagePlus, Plus, Trash2, Pencil, Copy,
   RefreshCw, Star, X, Upload, Images, Eye, EyeOff, Save, ArrowUp, ArrowDown, Sparkles, Wand2, Check,
 } from "lucide-react";
 import { AdminGuard } from "@/components/AdminGuard";
@@ -116,10 +116,14 @@ function ProductsAdmin() {
   const [generatedCodes, setGeneratedCodes] = useState({ sku: "", barcode: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [cloneProgress, setCloneProgress] = useState<{ active: boolean; percent: number; title: string; detail: string }>({ active: false, percent: 0, title: "", detail: "" });
   const [hasVariants, setHasVariants] = useState(false);
   const [drafts, setDrafts] = useState<VariantDraft[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [quickEdits, setQuickEdits] = useState<Record<string, { price: string; stock: string }>>({});
+  const [quickEditMode, setQuickEditMode] = useState(false);
+  const [quickSaving, setQuickSaving] = useState(false);
   const [mainExisting, setMainExisting] = useState<DbProductImage[]>([]);
   const [mainUploads, setMainUploads] = useState<UploadItem[]>([]);
   const [mainPrimary, setMainPrimary] = useState(0);
@@ -143,6 +147,8 @@ function ProductsAdmin() {
       setVariants(await listProductVariants(ps.map((p) => p.id)));
       setImages(imgs);
       setSelectedIds(new Set());
+      setQuickEdits({});
+      setQuickEditMode(false);
     } catch (e: any) {
       setError(e.message || "تعذر تحميل المنتجات.");
     } finally {
@@ -161,6 +167,96 @@ function ProductsAdmin() {
     });
     return map;
   }, [variants]);
+
+  const getQuickValues = (id: string, price: number | null | undefined, stock: number | null | undefined) =>
+    quickEdits[id] || { price: price == null ? "" : String(price), stock: stock == null ? "0" : String(stock) };
+
+  const startQuickEdit = () => {
+    const next: Record<string, { price: string; stock: string }> = {};
+    items.forEach((product) => {
+      next[product.id] = { price: String(product.price ?? 0), stock: String(product.stock ?? 0) };
+    });
+    variants.forEach((variant) => {
+      next[variant.id] = {
+        price: String(variant.price ?? 0),
+        stock: String(variant.stock ?? 0),
+      };
+    });
+    setQuickEdits(next);
+    setQuickEditMode(true);
+    setError("");
+  };
+
+  const setQuickValue = (id: string, field: "price" | "stock", value: string) => {
+    setQuickEdits((current) => ({
+      ...current,
+      [id]: {
+        ...(current[id] || { price: "", stock: "0" }),
+        [field]: value.replace(/[^0-9.]/g, ""),
+      },
+    }));
+  };
+
+  const saveQuickEdits = async () => {
+    if (!quickEditMode) return;
+    setQuickSaving(true);
+    setError("");
+    try {
+      const updates: any[] = [];
+
+      items.forEach((product) => {
+        const draft = quickEdits[product.id];
+        if (!draft) return;
+        const price = Number(draft.price);
+        const stock = Number(draft.stock);
+        if (!Number.isFinite(price) || price < 0 || !Number.isFinite(stock) || stock < 0) {
+          throw new Error(`السعر أو المخزون غير صالح للمنتج: ${product.name_ar}`);
+        }
+        if (price === Number(product.price) && stock === Number(product.stock)) return;
+        updates.push(
+          supabase.from("products").update({
+            sale_price: price,
+            final_price: price,
+            stock_quantity: Math.floor(stock),
+            is_active: product.is_active !== false,
+          }).eq("id", product.id),
+        );
+      });
+
+      variants.forEach((variant) => {
+        const draft = quickEdits[variant.id];
+        if (!draft) return;
+        const price = Number(draft.price);
+        const stock = Number(draft.stock);
+        if (!Number.isFinite(price) || price < 0 || !Number.isFinite(stock) || stock < 0) {
+          throw new Error(`السعر أو المخزون غير صالح للتفريعة: ${variant.variant_name}`);
+        }
+        if (price === Number(variant.price ?? 0) && stock === Number(variant.stock ?? 0)) return;
+        updates.push(
+          supabase.from("product_variants").update({
+            sale_price: price,
+            final_price: price,
+            stock_quantity: Math.floor(stock),
+          }).eq("id", variant.id),
+        );
+      });
+
+      const results = await Promise.all(updates);
+      const failed = results.find((result: any) => result?.error);
+      if (failed?.error) throw failed.error;
+      toast.success("تم حفظ تعديلات الأسعار والمخزون بنجاح.");
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setQuickSaving(false);
+    }
+  };
+
+  const cancelQuickEdits = () => {
+    setQuickEdits({});
+    setQuickEditMode(false);
+  };
 
   const reset = () => {
     setEditing(null); setForm(empty); setShow(false); setEntryMode("automation");
@@ -518,6 +614,167 @@ function ProductsAdmin() {
     }
   };
 
+  const cloneStorageImage = async (image: DbProductImage, newProductId: string, newVariantId: string | null) => {
+    if (!image.storage_path) {
+      return {
+        product_id: newProductId,
+        variant_id: newVariantId,
+        image_url: image.image_url,
+        storage_path: null,
+        is_primary: image.is_primary,
+        sort_order: image.sort_order,
+      };
+    }
+
+    const sourcePath = image.storage_path;
+    const downloaded = await supabase.storage.from("product-images").download(sourcePath);
+    if (downloaded.error) throw downloaded.error;
+    const ext = (sourcePath.split(".").pop() || "jpg").toLowerCase();
+    const safeExt = /^[a-z0-9]+$/.test(ext) ? ext : "jpg";
+    const targetPath = `products/${newProductId}/${newVariantId || "main"}/${crypto.randomUUID()}.${safeExt}`;
+    const uploaded = await supabase.storage.from("product-images").upload(targetPath, downloaded.data, {
+      upsert: false,
+      contentType: downloaded.data.type || "image/jpeg",
+    });
+    if (uploaded.error) throw uploaded.error;
+    const url = supabase.storage.from("product-images").getPublicUrl(targetPath).data.publicUrl;
+    return {
+      product_id: newProductId,
+      variant_id: newVariantId,
+      image_url: url,
+      storage_path: targetPath,
+      is_primary: image.is_primary,
+      sort_order: image.sort_order,
+    };
+  };
+
+  const cloneProduct = async (source: AdminProduct, withVariants: boolean) => {
+    setLoading(true);
+    setError("");
+    setCloneProgress({ active: true, percent: 8, title: "جاري تجهيز النسخة", detail: withVariants ? "جاري تجهيز المنتج والتفريعات الخاصة به..." : "جاري تجهيز بيانات المنتج..." });
+    let newProductId: string | null = null;
+    const copiedPaths: string[] = [];
+    try {
+      const sourceVariants = grouped.get(source.id) || [];
+      const sourceImages = images.filter((image) => image.product_id === source.id);
+      setCloneProgress({ active: true, percent: 16, title: "جاري إنشاء المنتج", detail: "جاري إنشاء SKU و Barcode جديدين وربط النسخة بالتصنيف والموديل..." });
+      const newSlug = await makeUniqueSlug(`${source.slug || source.name_en}-copy`, null);
+      const newSku = await makeUniqueCode("SODFA", "products", "sku");
+      const newBarcode = await makeUniqueCode("622", "products", "barcode");
+
+      const productPayload: any = {
+        slug: newSlug,
+        name_ar: source.name_ar,
+        name_en: source.name_en,
+        description_ar: source.description_ar || null,
+        description_en: source.description_en || null,
+        color: source.color || null,
+        category_id: source.category_id || null,
+        model_id: source.model_id || null,
+        base_price: source.old_price ?? source.price,
+        sale_price: source.price,
+        final_price: source.price,
+        stock_quantity: 0,
+        is_active: false,
+        is_featured: source.featured,
+        is_bestseller: source.best_seller,
+        is_new: source.is_new,
+        is_offer: Boolean(source.old_price),
+        sku: newSku,
+        barcode: newBarcode,
+      };
+
+      const inserted = await supabase.from("products").insert(productPayload).select("id").single();
+      if (inserted.error) throw inserted.error;
+      newProductId = inserted.data.id;
+      setCloneProgress({ active: true, percent: 30, title: "تم إنشاء المنتج", detail: "جاري نسخ الصور والبيانات المرتبطة..." });
+
+      const mainImageRows: any[] = [];
+      for (const image of sourceImages.filter((item) => !item.variant_id)) {
+        const row = await cloneStorageImage(image, newProductId, null);
+        mainImageRows.push(row);
+        if (row.storage_path) copiedPaths.push(row.storage_path);
+      }
+      if (mainImageRows.length) {
+        const result = await supabase.from("product_images").insert(mainImageRows);
+        if (result.error) throw result.error;
+      }
+      setCloneProgress({ active: true, percent: withVariants && sourceVariants.length ? 48 : 72, title: "جاري تجهيز الصور", detail: withVariants && sourceVariants.length ? "تم نسخ الصور الأساسية، وجاري تجهيز التفريعات..." : "تم نسخ الصور الأساسية، وجاري إنهاء النسخة..." });
+
+      if (withVariants) {
+        for (let variantIndex = 0; variantIndex < sourceVariants.length; variantIndex++) {
+          const sourceVariant = sourceVariants[variantIndex];
+          const variantSku = await makeUniqueCode("SODFA-V", "product_variants", "sku");
+          const variantBarcode = await makeUniqueCode("623", "product_variants", "barcode");
+          const variantPayload: any = {
+            product_id: newProductId,
+            variant_name: sourceVariant.variant_name,
+            variant_type: sourceVariant.variant_type || "other",
+            variant_value: sourceVariant.variant_value || null,
+            name_ar: sourceVariant.name_ar || null,
+            name_en: sourceVariant.name_en || null,
+            slug: sourceVariant.slug || null,
+            description_ar: sourceVariant.description_ar || null,
+            description_en: sourceVariant.description_en || null,
+            category_id: sourceVariant.category_id || source.category_id || null,
+            model_id: sourceVariant.model_id || source.model_id || null,
+            is_featured: Boolean(sourceVariant.is_featured),
+            is_bestseller: Boolean(sourceVariant.is_bestseller),
+            is_new: Boolean(sourceVariant.is_new),
+            color: sourceVariant.color || null,
+            base_price: sourceVariant.old_price ?? sourceVariant.price ?? source.price,
+            sale_price: sourceVariant.price ?? source.price,
+            final_price: sourceVariant.price ?? source.price,
+            stock_quantity: 0,
+            sku: variantSku,
+            barcode: variantBarcode,
+            is_active: false,
+            display_order: sourceVariant.display_order,
+          };
+          const variantResult = await supabase.from("product_variants").insert(variantPayload).select("id").single();
+          if (variantResult.error) throw variantResult.error;
+          const newVariantId = variantResult.data.id;
+
+          const variantImages = sourceImages.filter((item) => item.variant_id === sourceVariant.id);
+          const variantImageRows: any[] = [];
+          for (const image of variantImages) {
+            const row = await cloneStorageImage(image, newProductId, newVariantId);
+            variantImageRows.push(row);
+            if (row.storage_path) copiedPaths.push(row.storage_path);
+          }
+          if (variantImageRows.length) {
+            const imageResult = await supabase.from("product_images").insert(variantImageRows);
+            if (imageResult.error) throw imageResult.error;
+          }
+          const progress = sourceVariants.length ? 48 + Math.round(((variantIndex + 1) / sourceVariants.length) * 42) : 90;
+          setCloneProgress({ active: true, percent: progress, title: "جاري نسخ التفريعات", detail: `تم تجهيز ${variantIndex + 1} من ${sourceVariants.length} تفريعة...` });
+        }
+      }
+
+      setCloneProgress({ active: true, percent: 94, title: "جاري إنهاء النسخة", detail: "جاري تحديث قائمة المنتجات والتأكد من اكتمال البيانات..." });
+      await load();
+      setCloneProgress({ active: true, percent: 100, title: "تم النسخ بنجاح", detail: "تم إنشاء النسخة ويمكنك فتحها وتعديلها الآن." });
+      toast.success("تم نسخ المنتج بنجاح", {
+        description: withVariants ? "تم نسخ المنتج وكل التفريعات بأكواد جديدة. يمكنك فتح النسخة من الجدول وتعديلها." : "تم نسخ المنتج بكود SKU وBarcode جديدين. يمكنك فتح النسخة من الجدول وتعديلها.",
+      });
+    } catch (e: any) {
+      if (newProductId) {
+        await supabase.from("product_images").delete().eq("product_id", newProductId);
+        await supabase.from("product_variants").delete().eq("product_id", newProductId);
+        await supabase.from("products").delete().eq("id", newProductId);
+      }
+      if (copiedPaths.length) await supabase.storage.from("product-images").remove(copiedPaths).catch(() => undefined);
+      const message = e?.message || "تعذر نسخ المنتج.";
+      setError(message);
+      toast.error("تعذر نسخ المنتج", { description: message });
+      setCloneProgress({ active: true, percent: 0, title: "تعذر إكمال النسخ", detail: message });
+      window.setTimeout(() => setCloneProgress((prev) => ({ ...prev, active: false })), 2200);
+    } finally {
+      setLoading(false);
+      if (newProductId) window.setTimeout(() => setCloneProgress((prev) => ({ ...prev, active: false })), 1100);
+    }
+  };
+
   const remove = async (id: string) => {
     if (!confirm("حذف المنتج وجميع الـ Variants والصور الخاصة به؟")) return;
     setLoading(true);
@@ -779,6 +1036,20 @@ function ProductsAdmin() {
             </div>
           )}
 
+          {cloneProgress.active && (
+            <div className="fixed left-4 top-1/2 z-[100] w-[min(380px,calc(100vw-2rem))] -translate-y-1/2 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+              <div className="h-1.5 bg-slate-100"><div className="h-full bg-gradient-to-r from-violet-500 via-fuchsia-500 to-indigo-500 transition-all duration-500" style={{ width: `${cloneProgress.percent}%` }} /></div>
+              <div className="p-5" dir="rtl">
+                <div className="flex items-start gap-3">
+                  <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-violet-50 text-violet-600">{cloneProgress.percent >= 100 ? <Check size={21}/> : <Copy size={21} className="animate-pulse"/>}</div>
+                  <div className="min-w-0 flex-1"><h3 className="font-black text-slate-900">{cloneProgress.title}</h3><p className="mt-1 text-xs leading-5 text-slate-500">{cloneProgress.detail}</p></div>
+                  <span className="text-sm font-black text-violet-600">{cloneProgress.percent}%</span>
+                </div>
+                <div className="mt-4 flex items-center justify-between text-[11px] text-slate-400"><span>{cloneProgress.percent >= 100 ? "يمكنك الآن تعديل النسخة" : "من فضلك انتظر حتى يكتمل النسخ"}</span><span>لا تغلق الصفحة</span></div>
+              </div>
+            </div>
+          )}
+
           <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 shadow-xl">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 px-5 py-4">
               <div className="flex items-center gap-3">
@@ -792,8 +1063,13 @@ function ProductsAdmin() {
                 />
                 <div><h2 className="font-black text-white">Products</h2><p className="text-xs text-slate-500">{items.length} منتج {selectedIds.size ? `• ${selectedIds.size} محدد` : ""}</p></div>
               </div>
-              <div className="flex items-center gap-2">
-                {selectedIds.size > 0 && <Button type="button" variant="destructive" onClick={() => void removeSelected()} disabled={loading}><Trash2 size={15}/> حذف المحدد ({selectedIds.size})</Button>}
+              <div className="flex flex-wrap items-center gap-2">
+                {!quickEditMode && <Button type="button" variant="outline" onClick={startQuickEdit} disabled={loading} className="border-violet-500/40 bg-violet-500/10 text-white hover:bg-violet-500/20"><Pencil size={15}/> تعديل السعر والمخزون</Button>}
+                {quickEditMode && <>
+                  <Button type="button" onClick={() => void saveQuickEdits()} disabled={quickSaving} className="bg-white text-slate-950 hover:bg-slate-100"><Save size={15}/> {quickSaving ? "جاري حفظ التعديلات..." : "حفظ التعديلات"}</Button>
+                  <Button type="button" variant="outline" onClick={cancelQuickEdits} disabled={quickSaving} className="border-slate-700 bg-transparent text-white">إلغاء</Button>
+                </>}
+                {selectedIds.size > 0 && <Button type="button" variant="destructive" onClick={() => void removeSelected()} disabled={loading || quickEditMode}><Trash2 size={15}/> حذف المحدد ({selectedIds.size})</Button>}
               </div>
             </div>
             <div className="overflow-x-auto">
@@ -805,15 +1081,18 @@ function ProductsAdmin() {
                     return <Fragment key={p.id}>
                       <tr className="border-t border-slate-800 bg-slate-950 hover:bg-slate-900/70">
                         <td className="p-4"><div className="flex items-center gap-3"><input type="checkbox" aria-label={`تحديد ${p.name_ar}`} checked={selectedIds.has(p.id)} onChange={(e) => setSelectedIds((prev) => { const next = new Set(prev); if (e.target.checked) next.add(p.id); else next.delete(p.id); return next; })} className="h-4 w-4 accent-white"/><div className="h-14 w-14 overflow-hidden rounded-xl bg-slate-900 ring-1 ring-slate-800">{p.thumbnail_url ? <img src={p.thumbnail_url} className="h-full w-full object-contain bg-white" /> : <ImagePlus className="m-4 text-slate-600" size={20}/>}</div><div><div className="font-bold text-white">{p.name_ar}</div><div className="text-xs text-slate-500">{p.name_en}</div></div></div></td>
-                        <td className="p-4 font-mono text-xs text-slate-400">{p.barcode || "—"}</td><td className="p-4 text-white">{p.price} جنيه</td><td className="p-4 text-slate-300">{p.stock}</td>
+                        <td className="p-4 font-mono text-xs text-slate-400">{p.barcode || "—"}</td>
+                        <td className="p-4 text-white">{quickEditMode ? (() => { const q = getQuickValues(p.id, p.price, p.stock); return <Input type="number" min="0" step="0.01" value={q.price} onChange={(e) => setQuickValue(p.id, "price", e.target.value)} className="h-9 w-28 border-slate-700 bg-slate-900 text-white"/>; })() : <>{p.price} جنيه</>}</td>
+                        <td className="p-4 text-slate-300">{quickEditMode ? (() => { const q = getQuickValues(p.id, p.price, p.stock); return <Input type="number" min="0" step="1" value={q.stock} onChange={(e) => setQuickValue(p.id, "stock", e.target.value)} className="h-9 w-24 border-slate-700 bg-slate-900 text-white"/>; })() : p.stock}</td>
                         <td className="p-4">{vs.length ? <button className="flex items-center gap-1 rounded-xl bg-slate-800 px-3 py-2 text-xs text-white" onClick={() => setExpanded((e) => ({ ...e, [p.id]: !e[p.id] }))}>{expanded[p.id] ? <ChevronDown size={15}/> : <ChevronRight size={15}/>} {vs.length} Variant</button> : <span className="text-slate-600">—</span>}</td>
-                        <td className="p-4"><div className="flex gap-2"><Button size="sm" variant="outline" className="border-slate-700 bg-transparent text-white" onClick={() => openEdit(p)}><Pencil size={15}/></Button><Button size="sm" variant="destructive" onClick={() => void remove(p.id)}><Trash2 size={15}/></Button></div></td>
+                        <td className="p-4"><div className="flex gap-2"><Button size="sm" variant="outline" title="نسخ المنتج فقط" className="border-slate-700 bg-transparent text-white" onClick={() => void cloneProduct(p, false)} disabled={loading}><Copy size={15}/></Button><Button size="sm" variant="outline" title="نسخ المنتج مع التفريعات" className="border-slate-700 bg-transparent text-white" onClick={() => void cloneProduct(p, true)} disabled={loading}><Copy size={15}/><span className="hidden xl:inline">+ Variants</span></Button><Button size="sm" variant="outline" className="border-slate-700 bg-transparent text-white" onClick={() => openEdit(p)}><Pencil size={15}/></Button><Button size="sm" variant="destructive" onClick={() => void remove(p.id)}><Trash2 size={15}/></Button></div></td>
                       </tr>
                       {expanded[p.id] && vs.map((v) => {
                         const thumb = variantThumb(v.id);
                         return <tr key={v.id} className="border-t border-slate-900 bg-slate-900/60">
                           <td className="p-3 pr-10" colSpan={2}><div className="flex items-center gap-3"><div className="h-14 w-14 overflow-hidden rounded-xl bg-slate-950 ring-1 ring-slate-800">{thumb ? <img src={thumb} className="h-full w-full object-contain bg-white"/> : <ImagePlus size={18} className="m-4 text-slate-700"/>}</div><div><div className="font-bold text-white">↳ {v.variant_name}</div><div className="text-xs text-slate-400">{v.variant_type || "Variant"}: {v.variant_value || "—"} {v.color ? `• ${v.color}` : ""}</div><div className="mt-1 font-mono text-[10px] text-slate-600">{v.sku || "—"} • {v.barcode || "—"}</div></div></div></td>
-                          <td className="p-3 text-white">{v.price ?? p.price} جنيه{v.old_price != null && Number(v.old_price) > Number(v.price ?? p.price) ? <span className="ms-2 text-xs text-slate-500 line-through">{v.old_price} جنيه</span> : null}</td><td className="p-3 text-slate-300">{v.stock ?? 0}</td><td className="p-3 text-xs text-slate-500">{images.filter((i) => i.variant_id === v.id).length} صور</td>
+                          <td className="p-3 text-white">{quickEditMode ? (() => { const q = getQuickValues(v.id, v.price ?? p.price, v.stock ?? 0); return <Input type="number" min="0" step="0.01" value={q.price} onChange={(e) => setQuickValue(v.id, "price", e.target.value)} className="h-9 w-28 border-slate-700 bg-slate-950 text-white"/>; })() : <>{v.price ?? p.price} جنيه{v.old_price != null && Number(v.old_price) > Number(v.price ?? p.price) ? <span className="ms-2 text-xs text-slate-500 line-through">{v.old_price} جنيه</span> : null}</>}</td>
+                          <td className="p-3 text-slate-300">{quickEditMode ? (() => { const q = getQuickValues(v.id, v.price ?? p.price, v.stock ?? 0); return <Input type="number" min="0" step="1" value={q.stock} onChange={(e) => setQuickValue(v.id, "stock", e.target.value)} className="h-9 w-24 border-slate-700 bg-slate-950 text-white"/>; })() : (v.stock ?? 0)}</td><td className="p-3 text-xs text-slate-500">{images.filter((i) => i.variant_id === v.id).length} صور</td>
                           <td className="p-3"><div className="flex gap-2"><Button size="sm" variant="outline" className="border-slate-700 bg-transparent text-white" onClick={() => openEdit(p)}><Pencil size={15}/></Button><Button size="sm" variant="destructive" onClick={() => void removeVariant(v)}><Trash2 size={15}/></Button></div></td>
                         </tr>;
                       })}

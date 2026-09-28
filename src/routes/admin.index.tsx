@@ -1,9 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Package, Tags, ShoppingCart, RefreshCw, Plus, Trash2, Pencil, Upload, Star } from "lucide-react";
 import { AdminGuard } from "@/components/AdminGuard";
 import { AdminPage } from "@/components/AdminShell";
-import { dashboardStats, DEFAULT_STORE_WHATSAPP_NUMBER, type CustomerReview, type ShippingRate } from "@/lib/db";
+import { dashboardStats, type CustomerReview, type ShippingRate } from "@/lib/db";
 import { supabase } from "@/lib/supabase";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -90,12 +90,10 @@ function Dashboard() {
     <div className="grid gap-5 md:grid-cols-3"><Stat icon={<Package/>} title="المنتجات" value={stats.products}/><Stat icon={<Tags/>} title="التصنيفات" value={stats.categories}/><Stat icon={<ShoppingCart/>} title="الطلبات" value={stats.orders}/></div>
 
     <section className="mt-8">
-      <div className="mb-4"><h2 className="text-2xl font-extrabold">رقم واتساب استقبال الطلبات</h2><p className="mt-1 text-sm text-slate-400">هذا هو الرقم الثابت المرتبط بفورم طلبات العملاء، وتُرسل إليه جميع الطلبات.</p></div>
-      <Card className="border-slate-800 bg-slate-900"><CardContent className="p-5 sm:p-6">
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <Input value={DEFAULT_STORE_WHATSAPP_NUMBER} readOnly inputMode="tel" className="border-slate-700 bg-slate-950" />
-        </div>
-        <p className="mt-3 text-xs text-slate-500">الرقم المستخدم فعليًا في فورم الطلبات: 201093384952.</p>
+      <div className="mb-4"><h2 className="text-2xl font-extrabold">واتساب استقبال الطلبات</h2><p className="mt-1 text-sm text-slate-400">رقم استقبال طلبات العملاء أصبح له صفحة إعدادات مستقلة لتغيير كود الدولة ورقم الهاتف.</p></div>
+      <Card className="border-slate-800 bg-slate-900"><CardContent className="flex flex-wrap items-center justify-between gap-4 p-5 sm:p-6">
+        <div><div className="font-bold text-white">إدارة رقم واتساب</div><p className="mt-1 text-xs text-slate-500">أي تغيير هنا ينعكس على فورم الطلبات مباشرة.</p></div>
+        <Link to="/admin/settings" className="inline-flex h-10 items-center rounded-xl bg-white px-4 text-sm font-bold text-slate-900 hover:bg-slate-100">فتح إعدادات واتساب</Link>
       </CardContent></Card>
     </section>
 

@@ -17,6 +17,7 @@ export type DbSeries = {
   name_en: string;
   image_url: string | null;
   storage_path?: string | null;
+  display_order?: number;
   created_at?: string;
 };
 
@@ -211,7 +212,8 @@ export async function listCategories() {
 export async function listSeries() {
   const { data, error } = await supabase
     .from("product_series")
-    .select("id,slug,name_ar,name_en,image_url,storage_path,created_at")
+    .select("id,slug,name_ar,name_en,image_url,storage_path,display_order,created_at")
+    .order("display_order", { ascending: true })
     .order("name_ar");
   if (error) throw error;
   return (data ?? []) as DbSeries[];
@@ -502,11 +504,78 @@ export function normalizeEgyptWhatsAppNumber(value: string) {
   return digits;
 }
 
+export async function getStoreWhatsAppSettings() {
+  // Do not assume a particular id value. The settings table may use an
+  // identity/UUID key, so always read the current settings row directly.
+  const { data, error } = await supabase
+    .from("store_settings")
+    .select("id,whatsapp_country_code,whatsapp_number")
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    console.warn("Store WhatsApp settings unavailable; using fallback number.", error);
+    return { countryCode: "+20", number: "1093384952", normalized: DEFAULT_STORE_WHATSAPP_NUMBER };
+  }
+
+  const countryCode = String(data?.whatsapp_country_code || "+20").trim();
+  const number = String(data?.whatsapp_number || "1093384952").trim();
+  const normalized = normalizeWhatsAppNumber(countryCode, number) || DEFAULT_STORE_WHATSAPP_NUMBER;
+  return { countryCode, number, normalized };
+}
+
+export function normalizeWhatsAppNumber(countryCode: string, number: string) {
+  const code = String(countryCode || "").replace(/\D/g, "");
+  const local = String(number || "").replace(/\D/g, "");
+  if (!code || !local) return "";
+  const withoutLeadingZero = local.replace(/^0+/, "");
+  return `${code}${withoutLeadingZero}`;
+}
+
 export async function getStoreWhatsAppNumber() {
-  // Customer orders always go to the store's dedicated WhatsApp number.
-  // Do not query settings here because the current SODFA settings schema
-  // does not expose a generic `value` column.
-  return DEFAULT_STORE_WHATSAPP_NUMBER;
+  return (await getStoreWhatsAppSettings()).normalized;
+}
+
+export async function saveStoreWhatsAppSettings(countryCode: string, number: string) {
+  const normalized = normalizeWhatsAppNumber(countryCode, number);
+  if (!normalized || normalized.length < 8) throw new Error("رقم واتساب غير صالح. تأكد من كود الدولة ورقم الهاتف.");
+
+  const cleanCode = `+${String(countryCode).replace(/\D/g, "")}`;
+  const cleanNumber = String(number).replace(/\D/g, "").replace(/^0+/, "");
+  const payload = {
+    whatsapp_country_code: cleanCode,
+    whatsapp_number: cleanNumber,
+    updated_at: new Date().toISOString(),
+  };
+
+  // Do not assume that store_settings.id is numeric, equals 1, or has a
+  // UNIQUE/PRIMARY constraint. Read the actual settings row first, then
+  // update it by its real id. If the table is empty, insert without forcing
+  // an id so the database can use its own default/identity value.
+  const existing = await supabase
+    .from("store_settings")
+    .select("id")
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (existing.error) throw existing.error;
+
+  if (existing.data?.id != null) {
+    const updated = await supabase
+      .from("store_settings")
+      .update(payload)
+      .eq("id", existing.data.id);
+    if (updated.error) throw updated.error;
+  } else {
+    const inserted = await supabase
+      .from("store_settings")
+      .insert(payload);
+    if (inserted.error) throw inserted.error;
+  }
+
+  return { countryCode: cleanCode, number: cleanNumber, normalized };
 }
 
 export type ShippingRate = {

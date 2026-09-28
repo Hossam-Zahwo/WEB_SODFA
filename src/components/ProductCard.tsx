@@ -179,7 +179,7 @@ export function ProductCard({
 
 export function ProductGrid({
   products,
-  includeVariants = false,
+  includeVariants = true,
   selectedModelId,
 }: {
   products: StoreProduct[];
@@ -190,16 +190,16 @@ export function ProductGrid({
     <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
       {products.flatMap((product) => {
         if (selectedModelId) {
-          const matchingVariants = product.variants.filter((variant) => variant.modelId === selectedModelId);
-          if (matchingVariants.length) {
-            return matchingVariants.map((variant) => (
-              <ProductCard key={`${product.id}-${variant.id}`} product={product} variant={variant} />
-            ));
-          }
+          const items: React.ReactNode[] = [];
           if (product.modelId === selectedModelId) {
-            return [<ProductCard key={product.id} product={product} />];
+            items.push(<ProductCard key={product.id} product={product} />);
           }
-          return [];
+          product.variants
+            .filter((variant) => variant.modelId === selectedModelId)
+            .forEach((variant) => {
+              items.push(<ProductCard key={`${product.id}-${variant.id}`} product={product} variant={variant} />);
+            });
+          return items;
         }
 
         const parent = <ProductCard key={product.id} product={product} />;

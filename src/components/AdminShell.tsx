@@ -1,9 +1,10 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { LayoutDashboard, Package, Tags, ShoppingCart, MessageSquareHeart, LogOut, Store, Menu, X, Boxes, Layers } from "lucide-react";
+import { LayoutDashboard, Package, Tags, ShoppingCart, MessageSquareHeart, LogOut, Store, Menu, X, Boxes, Layers, Settings2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { signOutAdmin } from "@/lib/admin";
+import { AdminNetworkActivity } from "@/components/AdminNetworkActivity";
 
 const nav = [
   { to: "/admin", label: "الرئيسية", icon: LayoutDashboard },
@@ -13,6 +14,7 @@ const nav = [
   { to: "/admin/models", label: "الموديلات", icon: Boxes },
   { to: "/admin/orders", label: "الطلبات", icon: ShoppingCart },
   { to: "/admin/reviews", label: "تقييمات العملاء", icon: MessageSquareHeart },
+  { to: "/admin/settings", label: "إعدادات المتجر", icon: Settings2 },
 ];
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
@@ -23,6 +25,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div dir="rtl" className="sodfa-admin-shell min-h-screen bg-background text-foreground">
+      <AdminNetworkActivity />
       <button className="fixed right-4 top-4 z-50 rounded-lg border border-slate-200 bg-white p-2 text-black lg:hidden" onClick={() => setOpen(!open)} aria-label="القائمة">
         {open ? <X size={20}/> : <Menu size={20}/>}
       </button>
