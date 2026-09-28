@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Minus, Plus, Trash2, MapPin, Phone, User, MessageCircle, X, CheckCircle2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useCart } from "@/lib/cart";
-import { createStoreOrder, getStoreWhatsAppNumber, listShippingRates, type ShippingRate } from "@/lib/db";
+import { createStoreOrder, getStoreWhatsAppNumber, listShippingRates, openWhatsAppSmart, type ShippingRate } from "@/lib/db";
 import { useLang } from "@/lib/i18n";
 
 export const Route = createFileRoute("/cart")({
@@ -68,10 +68,10 @@ function CartPage() {
           status: "pending",
         });
         orderId = String(order.id).slice(0, 8);
-      } catch (orderError) {
-        // WhatsApp delivery must not be blocked by an unrelated order-DB/RPC error.
-        // The customer can still send the complete order details to the store.
-        console.error("Order record could not be saved; continuing with WhatsApp:", orderError);
+      } catch (orderError: any) {
+        console.error("Order record could not be saved:", orderError);
+        if (whatsappWindow && !whatsappWindow.closed) whatsappWindow.close();
+        throw new Error("تعذر تسجيل الطلب في لوحة التحكم. لم يتم فتح واتساب حتى لا يضيع الطلب. حاول مرة أخرى.");
       }
 
       const items = lines.map((line, i) => {
@@ -98,13 +98,7 @@ function CartPage() {
         `الإجمالي النهائي: ${price(total)}`,
       ].filter(Boolean).join("\n");
 
-      const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
-      if (whatsappWindow && !whatsappWindow.closed) {
-        whatsappWindow.location.href = whatsappUrl;
-      } else {
-        // Fallback for browsers/extensions that still block the reserved popup.
-        window.location.href = whatsappUrl;
-      }
+      openWhatsAppSmart(whatsappNumber, message, whatsappWindow);
       setSubmitted(true);
     } catch (e: any) {
       if (whatsappWindow && !whatsappWindow.closed) whatsappWindow.close();

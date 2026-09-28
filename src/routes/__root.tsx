@@ -17,6 +17,7 @@ import { CartProvider } from "@/lib/cart";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Toaster } from "@/components/ui/sonner";
+import { CustomerSupportButton } from "@/components/CustomerSupportButton";
 
 function NotFoundComponent() {
   return (
@@ -176,6 +177,7 @@ function RootComponent() {
                 <Outlet />
               </main>
               <Footer />
+              <CustomerSupportButton />
             </div>
           )}
         </CartProvider>

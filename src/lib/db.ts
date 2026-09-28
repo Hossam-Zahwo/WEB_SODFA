@@ -537,6 +537,47 @@ export async function getStoreWhatsAppNumber() {
   return (await getStoreWhatsAppSettings()).normalized;
 }
 
+/**
+ * Opens WhatsApp with an app-first strategy on mobile and a web fallback.
+ * WhatsApp documents both public wa.me links and the whatsapp:// URL scheme;
+ * the public link remains the fallback for browsers that do not hand off to
+ * the installed app.
+ */
+export function openWhatsAppSmart(number: string, message: string, targetWindow?: Window | null) {
+  const normalized = String(number || "").replace(/\D/g, "");
+  if (!normalized) throw new Error("WHATSAPP_NUMBER_MISSING");
+  const encoded = encodeURIComponent(message);
+  const webUrl = `https://wa.me/${normalized}?text=${encoded}`;
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+  if (!isMobile) {
+    if (targetWindow && !targetWindow.closed) targetWindow.location.href = webUrl;
+    else window.open(webUrl, "_blank", "noopener,noreferrer");
+    return;
+  }
+
+  const appUrl = `whatsapp://send?phone=${normalized}&text=${encoded}`;
+  let fallbackTimer = 0;
+  let handedOff = false;
+  const onVisibility = () => {
+    if (document.hidden) {
+      handedOff = true;
+      window.clearTimeout(fallbackTimer);
+      document.removeEventListener("visibilitychange", onVisibility);
+    }
+  };
+  document.addEventListener("visibilitychange", onVisibility);
+  const navigate = (url: string) => {
+    if (targetWindow && !targetWindow.closed) targetWindow.location.href = url;
+    else window.location.href = url;
+  };
+  navigate(appUrl);
+  fallbackTimer = window.setTimeout(() => {
+    document.removeEventListener("visibilitychange", onVisibility);
+    if (!handedOff) navigate(webUrl);
+  }, 1400);
+}
+
 export async function saveStoreWhatsAppSettings(countryCode: string, number: string) {
   const normalized = normalizeWhatsAppNumber(countryCode, number);
   if (!normalized || normalized.length < 8) throw new Error("رقم واتساب غير صالح. تأكد من كود الدولة ورقم الهاتف.");

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Check, Copy, MessageCircle, RefreshCw, Send, Truck } from "lucide-react";
+import { Check, Copy, MessageCircle, RefreshCw, Truck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AdminGuard } from "@/components/AdminGuard";
 import { AdminPage } from "@/components/AdminShell";
@@ -16,6 +16,7 @@ function OrdersAdmin() {
   const [items, setItems] = useState<any[]>([]);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
+  const [reviewLinks, setReviewLinks] = useState<Record<string, string>>({});
   const load = async () => {
     const { data, error } = await supabase.from("orders").select("*").order("created_at", { ascending: false });
     if (error) setError(error.message); else { setError(""); setItems(data || []); }
@@ -39,12 +40,26 @@ function OrdersAdmin() {
       if (existing.data?.token && !existing.data.submitted_at && new Date(existing.data.expires_at) > new Date()) token = existing.data.token;
       if (!token) {
         token = crypto.randomUUID().replaceAll("-", "") + crypto.randomUUID().replaceAll("-", "");
-        const { error } = await supabase.from("review_requests").upsert({ order_id: order.id, token, expires_at: new Date(Date.now() + 30 * 86400000).toISOString(), submitted_at: null, customer_name: order.customer_name || "", customer_phone: order.customer_phone || "" }, { onConflict: "order_id" });
-        if (error) throw error;
+        const payload = {
+          order_id: order.id,
+          token,
+          expires_at: new Date(Date.now() + 30 * 86400000).toISOString(),
+          submitted_at: null,
+          customer_name: order.customer_name || "",
+          customer_phone: order.customer_phone || "",
+        };
+        if (existing.data?.token) {
+          const updated = await supabase.from("review_requests").update(payload).eq("order_id", order.id);
+          if (updated.error) throw updated.error;
+        } else {
+          const inserted = await supabase.from("review_requests").insert(payload);
+          if (inserted.error) throw inserted.error;
+        }
       }
       await supabase.from("orders").update({ review_requested_at: new Date().toISOString() }).eq("id", order.id);
       const base = window.location.origin;
       const url = `${base}/review/${token}`;
+      setReviewLinks((current) => ({ ...current, [order.id]: url }));
       const number = String(order.customer_phone || "").replace(/\D/g, "");
       if (!number) throw new Error("رقم العميل غير موجود في الطلب.");
       const message = `أهلاً ${order.customer_name || "بيك"} ❤️\n\nسعداء إن طلبك وصل بنجاح. نحب نعرف رأيك في تجربتك مع SODFA ⭐\n\nقيّم طلبك من هنا:\n${url}\n\nشكرًا لثقتك في صدفة ❤️`;
@@ -65,7 +80,11 @@ function OrdersAdmin() {
           <div className="flex flex-wrap gap-2">{delivered && <button disabled={busy === o.id} onClick={() => void requestReview(o)} className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#a64cc1] to-[#6e2d8b] px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"><MessageCircle size={17}/>{busy === o.id ? "جاري التجهيز..." : o.review_requested_at ? "إعادة طلب التقييم" : "طلب تقييم على واتساب"}</button>}</div>
         </div>
         {o.address && <div className="mt-4 rounded-xl bg-slate-950/70 p-3 text-sm text-slate-300"><Truck size={15} className="mb-1 inline-block ml-2"/> {o.governorate || ""} — {o.address}</div>}
-        {o.review_requested_at && <div className="mt-3 flex items-center gap-2 text-xs text-emerald-300"><Check size={14}/> تم تجهيز طلب تقييم لهذا الطلب.</div>}
+        {reviewLinks[o.id] && <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-purple-500/20 bg-purple-500/5 p-3">
+          <span className="min-w-0 flex-1 truncate text-xs text-slate-300">{reviewLinks[o.id]}</span>
+          <button type="button" onClick={() => void navigator.clipboard?.writeText(reviewLinks[o.id])} className="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800"><Copy size={14}/>نسخ الرابط</button>
+        </div>}
+        {o.review_requested_at && <div className="mt-3 flex items-center gap-2 text-xs text-emerald-300"><Check size={14}/> تم تجهيز طلب تقييم لهذا الطلب ويمكن إرساله للعميل على واتساب.</div>}
       </CardContent></Card>;
     })}</div>
   </AdminPage></AdminGuard>;
