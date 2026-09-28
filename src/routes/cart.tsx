@@ -71,7 +71,7 @@ function CartPage() {
 
     // Reserve the popup immediately from the user's click. Waiting for Supabase
     // before window.open can make browsers block WhatsApp as a popup.
-    const whatsappWindow = window.open("about:blank", "_blank", "noopener,noreferrer");
+    const whatsappWindow = window.open("about:blank", "_blank");
 
     try {
       // Customer checkout always sends to the store's fixed order-receiving WhatsApp number.

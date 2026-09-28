@@ -548,36 +548,71 @@ export async function getStoreWhatsAppNumber() {
 export function openWhatsAppSmart(number: string, message: string, targetWindow?: Window | null) {
   const normalized = String(number || "").replace(/\D/g, "");
   if (!normalized) throw new Error("WHATSAPP_NUMBER_MISSING");
+
   const encoded = encodeURIComponent(message);
+  const appUrl = `whatsapp://send?phone=${normalized}&text=${encoded}`;
   const webUrl = `https://wa.me/${normalized}?text=${encoded}`;
   const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-  if (!isMobile) {
-    if (targetWindow && !targetWindow.closed) targetWindow.location.href = webUrl;
-    else window.open(webUrl, "_blank", "noopener,noreferrer");
-    return;
-  }
-
-  const appUrl = `whatsapp://send?phone=${normalized}&text=${encoded}`;
-  let fallbackTimer = 0;
-  let handedOff = false;
-  const onVisibility = () => {
-    if (document.hidden) {
-      handedOff = true;
-      window.clearTimeout(fallbackTimer);
-      document.removeEventListener("visibilitychange", onVisibility);
+  /*
+   * WhatsApp opening strategy:
+   * 1) Try the installed WhatsApp application first.
+   *    - Mobile: WhatsApp mobile app.
+   *    - Desktop: WhatsApp Desktop if it is registered for whatsapp://.
+   * 2) If the browser cannot hand the custom protocol to an app,
+   *    fall back to WhatsApp Web.
+   *
+   * The URL only opens the compose screen with the message prefilled.
+   * It never sends the message automatically.
+   */
+  const navigate = (url: string) => {
+    try {
+      if (targetWindow && !targetWindow.closed) {
+        targetWindow.location.href = url;
+      } else {
+        window.location.href = url;
+      }
+    } catch {
+      window.location.href = url;
     }
   };
-  document.addEventListener("visibilitychange", onVisibility);
-  const navigate = (url: string) => {
-    if (targetWindow && !targetWindow.closed) targetWindow.location.href = url;
-    else window.location.href = url;
-  };
+
+  // The custom protocol must be attempted first on both mobile and desktop.
   navigate(appUrl);
+
+  // Give the OS/browser a short window to hand off to the installed app.
+  // If it does not, use the universal web link as a reliable fallback.
+  let fallbackTimer = 0;
+  let handedOff = false;
+
+  const markHandedOff = () => {
+    handedOff = true;
+    window.clearTimeout(fallbackTimer);
+    document.removeEventListener("visibilitychange", onVisibility);
+    window.removeEventListener("blur", onBlur);
+  };
+
+  const onVisibility = () => {
+    if (document.hidden) markHandedOff();
+  };
+
+  const onBlur = () => {
+    // On many mobile/desktop browsers an external application causes
+    // the current window to lose focus without changing visibility.
+    markHandedOff();
+  };
+
+  document.addEventListener("visibilitychange", onVisibility);
+  window.addEventListener("blur", onBlur, { once: true });
+
   fallbackTimer = window.setTimeout(() => {
     document.removeEventListener("visibilitychange", onVisibility);
-    if (!handedOff) navigate(webUrl);
-  }, 1400);
+    window.removeEventListener("blur", onBlur);
+
+    if (!handedOff) {
+      navigate(webUrl);
+    }
+  }, isMobile ? 1800 : 2200);
 }
 
 export async function saveStoreWhatsAppSettings(countryCode: string, number: string) {
@@ -784,7 +819,18 @@ export async function createStoreOrder(
     p_total: payload.total,
     p_customer_token: customerToken,
   });
-  if (error) throw error;
+  if (error) {
+  console.error("CREATE ORDER ERROR:", {
+    message: error.message,
+    code: error.code,
+    details: error.details,
+    hint: error.hint,
+  });
+
+  throw new Error(
+    `ORDER_CREATE_FAILED: ${error.message || "Unknown database error"}`
+  );
+}
   const row = Array.isArray(data) ? data[0] : data;
   if (!row?.id) throw new Error("ORDER_CREATE_FAILED");
   return row as { id: string; created_at: string; customer_token: string };
