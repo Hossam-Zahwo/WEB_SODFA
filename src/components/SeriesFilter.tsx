@@ -24,7 +24,7 @@ export function SeriesFilter({ series, selectedSeriesId, onSelect }: Props) {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
         {series.map((item) => {
           const active = selectedSeriesId === item.id;
-          return <button key={item.id} type="button" onClick={() => onSelect(active ? undefined : item.id)} aria-pressed={active} className={cn("group relative min-w-0 overflow-hidden rounded-2xl border bg-transparent p-2.5 text-center transition-all duration-300 ease-out", active ? "border-primary bg-primary/8 shadow-[0_16px_35px_-24px_rgba(142,42,168,.75)]" : "border-border/80 hover:-translate-y-1 hover:border-primary/35 hover:shadow-[0_16px_35px_-25px_rgba(80,32,95,.45)]")}>
+          return <button key={item.id} type="button" onClick={() => onSelect(active ? undefined : item.id)} aria-pressed={active} className={cn("group relative min-w-0 overflow-hidden rounded-2xl bg-transparent p-2.5 text-center transition-all duration-300 ease-out", active ? "bg-primary/8 shadow-[0_16px_35px_-24px_rgba(142,42,168,.75)]" : "hover:-translate-y-1 hover:bg-primary/[0.03] hover:shadow-[0_16px_35px_-25px_rgba(80,32,95,.45)]")}>
             <span className="relative mx-auto block aspect-square max-w-[150px] overflow-hidden rounded-xl bg-white/40">
               <img src={item.image_url || "/placeholder.svg"} alt={pick(item.name_ar, item.name_en)} loading="lazy" className="h-full w-full object-contain p-2 transition-transform duration-500 ease-out group-hover:-translate-y-2" />
               {active && <span className="absolute end-1.5 top-1.5 grid h-6 w-6 place-items-center rounded-full bg-primary text-white shadow-lg"><Check className="h-3.5 w-3.5" /></span>}

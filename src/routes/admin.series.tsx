@@ -23,7 +23,7 @@ function SeriesAdmin() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const ref = useRef<HTMLInputElement | null>(null);
-  const load = async () => { try { setItems(await listSeries()); setError(""); } catch (e) { setError(e instanceof Error ? e.message : "تعذر تحميل السلاسل"); } };
+  const load = async () => { try { const rows = await listSeries(); setItems(rows); return true; } catch (e) { setError(`تعذر تحميل السلاسل: ${e instanceof Error ? e.message : String(e)}`); return false; } };
   useEffect(() => { void load(); }, []);
   const save = async (e: React.FormEvent) => {
     e.preventDefault(); setSaving(true); setError("");
@@ -32,24 +32,50 @@ function SeriesAdmin() {
       const slug = slugify(form.slug || form.name_en); if (!slug) throw new Error("تعذر إنشاء slug صالح.");
       const payload = { slug, name_ar: form.name_ar.trim(), name_en: form.name_en.trim() };
       let id = editing;
-      if (editing) { const r = await supabase.from("product_series").update(payload).eq("id", editing).select("id").single(); if (r.error) throw r.error; id = r.data.id; }
-      else { const r = await supabase.from("product_series").insert(payload).select("id").single(); if (r.error) throw r.error; id = r.data.id; }
+
+      if (editing) {
+        const r = await supabase.from("product_series").update(payload).eq("id", editing);
+        if (r.error) throw r.error;
+      } else {
+        // Generate the UUID client-side so saving does not depend on a post-insert SELECT policy.
+        id = crypto.randomUUID();
+        const r = await supabase.from("product_series").insert({ id, ...payload });
+        if (r.error) throw r.error;
+      }
+
+      // The series itself is already saved. Image upload is a separate optional step so
+      // a missing bucket/storage policy cannot make the user think the series was not saved.
       if (file && id) {
         const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
         const path = `${id}/${crypto.randomUUID()}.${ext}`;
         const up = await supabase.storage.from(BUCKET).upload(path, file, { upsert: false, contentType: file.type || "image/jpeg", cacheControl: "31536000" });
-        if (up.error) throw up.error;
-        const url = supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
-        const r = await supabase.from("product_series").update({ image_url: url, storage_path: path }).eq("id", id);
-        if (r.error) { await supabase.storage.from(BUCKET).remove([path]); throw r.error; }
-        const old = items.find(x => x.id === id)?.storage_path; if (old) await supabase.storage.from(BUCKET).remove([old]);
+        if (up.error) {
+          setError(`تم حفظ السلسلة، لكن تعذر رفع الصورة: ${up.error.message}`);
+        } else {
+          const url = supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+          const r = await supabase.from("product_series").update({ image_url: url, storage_path: path }).eq("id", id);
+          if (r.error) {
+            await supabase.storage.from(BUCKET).remove([path]);
+            setError(`تم حفظ السلسلة، لكن تعذر حفظ الصورة: ${r.error.message}`);
+          } else {
+            const old = items.find(x => x.id === id)?.storage_path;
+            if (old) await supabase.storage.from(BUCKET).remove([old]);
+          }
+        }
       } else if (removeImage && id) {
         const old = items.find(x => x.id === id)?.storage_path;
-        const r = await supabase.from("product_series").update({ image_url: null, storage_path: null }).eq("id", id); if (r.error) throw r.error;
+        const r = await supabase.from("product_series").update({ image_url: null, storage_path: null }).eq("id", id);
+        if (r.error) throw r.error;
         if (old) await supabase.storage.from(BUCKET).remove([old]);
       }
-      setForm(empty); setFile(null); setRemoveImage(false); setEditing(null); await load();
-    } catch (e) { setError(e instanceof Error ? e.message : "تعذر حفظ السلسلة"); } finally { setSaving(false); }
+
+      setForm(empty); setFile(null); setRemoveImage(false); setEditing(null);
+      const reloaded = await load();
+      if (!reloaded && !error) setError("تم حفظ السلسلة، لكن تعذر تحديث قائمة السلاسل. أعد تحميل الصفحة.");
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      setError(`تعذر حفظ السلسلة: ${message}`);
+    } finally { setSaving(false); }
   };
   const edit = (item: DbSeries) => { setEditing(item.id); setForm({ slug: item.slug, name_ar: item.name_ar, name_en: item.name_en, image_url: item.image_url || "" }); setFile(null); setRemoveImage(false); window.scrollTo({ top: 0, behavior: "smooth" }); };
   const remove = async (item: DbSeries) => { if (!confirm(`حذف السلسلة «${item.name_ar}»؟ يجب ألا تكون مرتبطة بموديلات.`)) return; const r = await supabase.from("product_series").delete().eq("id", item.id); if (r.error) setError(r.error.message); else { if (item.storage_path) await supabase.storage.from(BUCKET).remove([item.storage_path]); await load(); } };

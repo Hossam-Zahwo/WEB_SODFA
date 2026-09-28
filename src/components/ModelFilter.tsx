@@ -27,7 +27,9 @@ export function ModelFilter({
   const visibleModels = useMemo(() => {
     const filtered = models.filter((m) => {
       if (selectedSeriesId && m.series_id !== selectedSeriesId) return false;
-      return productModelIds ? productModelIds.has(m.id) : true;
+      // Models are structural children of the selected series, not product-availability filters.
+      // Keep every model visible even when it currently has no products.
+      return true;
     });
     return filtered;
   }, [models, productModelIds, selectedSeriesId]);
@@ -77,10 +79,10 @@ export function ModelFilter({
               onClick={() => onSelect(active ? undefined : model.id)}
               aria-pressed={active}
               className={cn(
-                "group relative min-w-0 overflow-hidden rounded-2xl border bg-transparent p-2.5 text-center transition-all duration-300 ease-out",
+                "group relative min-w-0 overflow-hidden rounded-2xl bg-transparent p-2.5 text-center transition-all duration-300 ease-out",
                 active
-                  ? "border-primary bg-primary/8 shadow-[0_16px_35px_-24px_rgba(142,42,168,.75)]"
-                  : "border-border/80 hover:-translate-y-1 hover:border-primary/35 hover:shadow-[0_16px_35px_-25px_rgba(80,32,95,.45)]",
+                  ? "bg-primary/8 shadow-[0_16px_35px_-24px_rgba(142,42,168,.75)]"
+                  : "hover:-translate-y-1 hover:bg-primary/[0.03] hover:shadow-[0_16px_35px_-25px_rgba(80,32,95,.45)]",
               )}
             >
               <span className="relative mx-auto block aspect-square max-w-[150px] overflow-hidden rounded-xl bg-white/40">

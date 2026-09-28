@@ -52,21 +52,38 @@ function ModelsAdmin() {
       if (!form.series_id) throw new Error("اختيار السلسلة مطلوب قبل حفظ الموديل.");
       const payload = { slug, name_ar: form.name_ar.trim(), name_en: form.name_en.trim(), series_id: form.series_id };
       let id = editing;
-      if (editing) { const r = await supabase.from("product_models").update(payload).eq("id", editing).select("id").single(); if (r.error) throw r.error; id = r.data.id; }
-      else { const r = await supabase.from("product_models").insert(payload).select("id").single(); if (r.error) throw r.error; id = r.data.id; }
+      if (editing) {
+        const r = await supabase.from("product_models").update(payload).eq("id", editing);
+        if (r.error) throw r.error;
+      } else {
+        id = crypto.randomUUID();
+        const r = await supabase.from("product_models").insert({ id, ...payload });
+        if (r.error) throw r.error;
+      }
+
+      let imageWarning = "";
       if (imageFile && id) {
-        const uploaded = await uploadImage(id, imageFile);
-        const r = await supabase.from("product_models").update({ image_url: uploaded.url, storage_path: uploaded.path }).eq("id", id);
-        if (r.error) { await supabase.storage.from(BUCKET).remove([uploaded.path]); throw r.error; }
-        const oldPath = items.find((m) => m.id === id)?.storage_path;
-        if (oldPath) await supabase.storage.from(BUCKET).remove([oldPath]);
+        try {
+          const uploaded = await uploadImage(id, imageFile);
+          const r = await supabase.from("product_models").update({ image_url: uploaded.url, storage_path: uploaded.path }).eq("id", id);
+          if (r.error) {
+            await supabase.storage.from(BUCKET).remove([uploaded.path]);
+            throw r.error;
+          }
+          const oldPath = items.find((m) => m.id === id)?.storage_path;
+          if (oldPath) await supabase.storage.from(BUCKET).remove([oldPath]);
+        } catch (imageError) {
+          imageWarning = `تم حفظ الموديل، لكن تعذر رفع الصورة: ${imageError instanceof Error ? imageError.message : String(imageError)}`;
+        }
       } else if (removeCurrentImage && id) {
         const r = await supabase.from("product_models").update({ image_url: null, storage_path: null }).eq("id", id);
         if (r.error) throw r.error;
         const oldPath = items.find((m) => m.id === id)?.storage_path;
         if (oldPath) await supabase.storage.from(BUCKET).remove([oldPath]);
       }
-      setShow(false); setEditing(null); setForm(empty); setImageFile(null); setRemoveCurrentImage(false); await load();
+      setShow(false); setEditing(null); setForm(empty); setImageFile(null); setRemoveCurrentImage(false);
+      await load();
+      if (imageWarning) setError(imageWarning);
     } catch (e) { setError(e instanceof Error ? e.message : "حدث خطأ أثناء حفظ الموديل."); } finally { setSaving(false); }
   };
   const openNew = () => { setEditing(null); setForm(empty); setImageFile(null); setRemoveCurrentImage(false); setShow(true); setError(""); };
