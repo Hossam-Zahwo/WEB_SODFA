@@ -1,7 +1,7 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { Plus, Check, Star } from "lucide-react";
+import { Check, ShoppingBasket, Star } from "lucide-react";
 import { SmartImage } from "./SmartImage";
 import { useLang } from "@/lib/i18n";
 import { useCart } from "@/lib/cart";
@@ -34,10 +34,10 @@ function Rating({ average = 0, count = 0 }: { average?: number; count?: number }
   const { t } = useLang();
   const rounded = Math.round(average);
   return (
-    <div className="flex items-center gap-1.5" aria-label={`${t("product.rating")} ${average.toFixed(1)} / 5`}>
+    <div className="flex items-center gap-1" aria-label={`${t("product.rating")} ${average.toFixed(1)} / 5`}>
       <div className="flex items-center gap-0.5">
         {Array.from({ length: 5 }).map((_, i) => (
-          <Star key={i} size={12} className={cn(i < rounded ? "fill-primary-light text-primary-light" : "text-muted-foreground/30")} />
+          <Star key={i} size={11} className={cn(i < rounded ? "fill-primary-light text-primary-light" : "text-muted-foreground/30")} />
         ))}
       </div>
       <span className="text-[10px] text-subtle">
@@ -60,6 +60,7 @@ export function ProductCard({
 }) {
   const { t, pick, price } = useLang();
   const { add } = useCart();
+  const navigate = useNavigate();
   const [added, setAdded] = useState(false);
   const displayPrice = variant?.price ?? product.price;
   const displayOldPrice = variant?.oldPrice ?? product.oldPrice;
@@ -70,17 +71,28 @@ export function ProductCard({
   const off = discountPct(displayPrice, displayOldPrice);
   const variantColor = variant?.color ?? (variant?.type === "color" ? variant.value : undefined);
 
+  const addOptions = {
+    variantId: variant?.id,
+    variantName: variant?.name,
+    image: displayImage,
+    price: displayPrice,
+    color: variant?.color,
+  };
+
   const onAdd = (e: React.MouseEvent) => {
     e.preventDefault();
-    add(product, {
-      variantId: variant?.id,
-      variantName: variant?.name,
-      image: displayImage,
-      price: displayPrice,
-      color: variant?.color,
-    });
+    e.stopPropagation();
+    add(product, addOptions);
     setAdded(true);
     window.setTimeout(() => setAdded(false), 1400);
+  };
+
+  const onBuyNow = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (variant ? !variant.inStock : !product.inStock) return;
+    add(product, addOptions);
+    void navigate({ to: "/cart", search: { checkout: true } });
   };
 
   return (
@@ -88,9 +100,9 @@ export function ProductCard({
       to="/product/$slug"
       params={{ slug: product.slug }}
       search={{ variant: variant?.id }}
-      className="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-card transition-all duration-300 hover:border-primary/40 hover:bg-card-hover hover:shadow-card"
+      className="group relative flex h-[390px] min-w-0 flex-col overflow-hidden rounded-xl border border-border/70 bg-card transition-all duration-300 hover:border-primary/40 hover:bg-card-hover hover:shadow-card sm:h-[430px]"
     >
-      <div className="relative overflow-hidden bg-white">
+      <div className="relative aspect-square shrink-0 overflow-hidden bg-white">
         <SmartImage
           src={displayImage}
           alt={displayName}
@@ -121,11 +133,11 @@ export function ProductCard({
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col gap-3 p-4">
-        <div>
-          <div className="line-clamp-2 text-sm font-medium sm:text-base">{displayName}</div>
+      <div className="flex min-h-0 flex-1 flex-col gap-2.5 p-3 sm:p-3.5">
+        <div className="min-h-[56px]">
+          <div className="line-clamp-2 text-[13px] font-semibold leading-5 sm:text-sm">{displayName}</div>
           {variant && (variant.value || variant.shape || variant.name) && (
-            <div className="mt-1 line-clamp-1 text-[11px] text-subtle" title={variant.value || variant.shape || variant.name}>
+            <div className="mt-0.5 line-clamp-1 text-[10px] text-subtle" title={variant.value || variant.shape || variant.name}>
               {variant.value || variant.shape || variant.name}
             </div>
           )}
@@ -133,42 +145,36 @@ export function ProductCard({
 
         <Rating average={product.ratingAverage} count={product.ratingCount} />
 
-        {(variant ? variant.inStock : product.inStock) && (
-          <div className="flex flex-wrap items-baseline gap-2">
-            <span className="text-base font-semibold sm:text-lg">{price(displayPrice)}</span>
-            {displayOldPrice && <span className="text-xs text-subtle line-through">{price(displayOldPrice)}</span>}
-          </div>
-        )}
+        <div className="flex min-h-[26px] flex-wrap items-baseline gap-2">
+          {(variant ? variant.inStock : product.inStock) ? (
+            <>
+              <span className="text-base font-bold sm:text-lg">{price(displayPrice)}</span>
+              {displayOldPrice && <span className="text-xs text-subtle line-through">{price(displayOldPrice)}</span>}
+            </>
+          ) : (
+            <span className="text-xs font-medium text-muted-foreground">{t("product.outStock")}</span>
+          )}
+        </div>
 
-        <div className="flex min-h-5 items-center gap-1.5">
+        <div className="flex min-h-5 items-center gap-1.5 overflow-hidden">
           {variantColor ? (
-            <span
-              title={variantColor}
-              className="h-4 w-4 rounded-full border border-border ring-2 ring-white"
-              style={{ backgroundColor: colorHex(variantColor) }}
-            />
+            <span title={variantColor} className="h-4 w-4 shrink-0 rounded-full border border-border ring-2 ring-white" style={{ backgroundColor: colorHex(variantColor) }} />
           ) : (
             product.colors.slice(0, 6).map((c) => (
-              <span
-                key={`${c.name.en}-${c.hex}`}
-                title={pick(c.name.ar, c.name.en)}
-                className="h-4 w-4 rounded-full border border-border"
-                style={{ backgroundColor: c.hex }}
-              />
+              <span key={`${c.name.en}-${c.hex}`} title={pick(c.name.ar, c.name.en)} className="h-4 w-4 shrink-0 rounded-full border border-border" style={{ backgroundColor: c.hex }} />
             ))
           )}
           {product.colors.length > 6 && !variant && <span className="text-[10px] text-subtle">+{product.colors.length - 6}</span>}
         </div>
 
-        <button
-          type="button"
-          onClick={onAdd}
-          disabled={variant ? !variant.inStock : !product.inStock}
-          className="mt-auto flex h-10 items-center justify-center gap-2 rounded-xl border border-border bg-input text-sm font-medium transition-all hover:border-primary/50 hover:bg-card-hover disabled:opacity-40"
-        >
-          {added ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-          {added ? t("product.added") : t("product.addToCart")}
-        </button>
+        <div className="mt-auto flex items-center gap-2">
+          <button type="button" onClick={onAdd} disabled={variant ? !variant.inStock : !product.inStock} aria-label={added ? t("product.added") : t("product.addToCart")} title={added ? t("product.added") : t("product.addToCart")} className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-primary/20 bg-primary/5 text-primary transition-all hover:scale-105 hover:border-primary/50 hover:bg-primary/10 disabled:opacity-40">
+            {added ? <Check className="h-4 w-4" /> : <ShoppingBasket className="h-4 w-4" />}
+          </button>
+          <button type="button" onClick={onBuyNow} disabled={variant ? !variant.inStock : !product.inStock} className="flex h-10 min-w-0 flex-1 items-center justify-center rounded-full bg-primary px-3 text-xs font-bold text-primary-foreground transition-all hover:bg-primary-dark disabled:opacity-40 sm:text-sm">
+            اطلب الآن
+          </button>
+        </div>
       </div>
     </Link>
   );

@@ -1,6 +1,6 @@
-import { createFileRoute, notFound, Link } from "@tanstack/react-router";
+import { createFileRoute, notFound, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Check, ChevronLeft, ChevronRight, Minus, Plus, ShieldCheck, Truck, Star } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Minus, Plus, ShieldCheck, Truck, Star, ShoppingBasket } from "lucide-react";
 import { SmartImage } from "@/components/SmartImage";
 import { ProductCard, ProductGrid } from "@/components/ProductCard";
 import { Section } from "@/components/Section";
@@ -34,6 +34,7 @@ function ProductPage() {
   const { variant: variantParam } = Route.useSearch();
   const { t, pick, price, lang } = useLang();
   const { add } = useCart();
+  const navigate = useNavigate();
 
   const [selectedVariantId, setSelectedVariantId] = useState<string | undefined>(variantParam);
   const selectedVariant = useMemo(
@@ -106,6 +107,24 @@ function ProductPage() {
     setImg(0);
   };
 
+  const onBuyNow = () => {
+    if (!activeInStock) return;
+
+    add(product, {
+      variantId: selectedVariant?.id,
+      variantName: selectedVariant?.name,
+      color: selectedVariant?.color,
+      image: selectedVariant?.primaryImage || gallery[0],
+      price: activePrice,
+      qty,
+    });
+
+    // Reuse the existing checkout flow on /cart; no new database/SQL flow is needed.
+    window.setTimeout(() => {
+      void navigate({ to: "/cart", search: { checkout: true } });
+    }, 0);
+  };
+
   return (
     <>
       <div className="sodfa-product-page mx-auto w-full max-w-7xl px-3 py-6 sm:px-6 sm:py-12">
@@ -160,9 +179,10 @@ function ProductPage() {
 
             {product.colors.length > 0 && !selectedVariant && <div className="mt-7"><span className="text-xs tracking-widest text-subtle uppercase">{t("product.colors")}</span><div className="mt-3 flex flex-wrap gap-2">{product.colors.map((c) => <span key={`${c.name.en}-${c.hex}`} className="flex items-center gap-2 rounded-full border border-border px-3 py-2 text-xs"><span className="h-4 w-4 rounded-full border" style={{ backgroundColor: c.hex }}/>{pick(c.name.ar, c.name.en)}</span>)}</div></div>}
 
-            <div className="product-buy-row mt-8 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 sm:gap-3">
+            <div className="product-buy-row mt-8 grid grid-cols-[auto_1fr_1fr] items-center gap-2 sm:gap-3">
               <div className="flex h-12 items-center gap-1 rounded-xl border border-border bg-input px-2"><button type="button" aria-label="-" onClick={() => setQty((q) => Math.max(1, q - 1))} className="grid h-8 w-8 place-items-center"><Minus className="h-4 w-4"/></button><span className="w-8 text-center text-sm">{qty}</span><button type="button" aria-label="+" onClick={() => setQty((q) => q + 1)} className="grid h-8 w-8 place-items-center"><Plus className="h-4 w-4"/></button></div>
-              <button type="button" onClick={onAdd} disabled={!activeInStock} className="bg-sodfa flex h-12 min-w-0 items-center justify-center gap-2 rounded-xl px-3 text-center text-xs font-semibold text-primary-foreground disabled:opacity-40 sm:px-6 sm:text-sm">{added ? <Check className="h-4 w-4"/> : <Plus className="h-4 w-4"/>}{added ? t("product.added") : t("product.addToCart")}</button>
+              <button type="button" onClick={onAdd} disabled={!activeInStock} className="bg-sodfa flex h-12 min-w-0 items-center justify-center gap-2 rounded-xl px-2 text-center text-xs font-semibold text-primary-foreground disabled:opacity-40 sm:px-5 sm:text-sm">{added ? <Check className="h-4 w-4"/> : <ShoppingBasket className="h-4 w-4"/>}{added ? t("product.added") : t("product.addToCart")}</button>
+              <button type="button" onClick={onBuyNow} disabled={!activeInStock} className="flex h-12 min-w-0 items-center justify-center rounded-xl border border-primary/30 bg-primary/5 px-2 text-xs font-bold text-primary transition hover:border-primary hover:bg-primary/10 disabled:opacity-40 sm:px-5 sm:text-sm">اطلب الآن</button>
             </div>
 
             <div className="mt-8 grid gap-4 border-t border-border pt-6 sm:grid-cols-2"><div className="flex items-start gap-3"><span className="bg-sodfa grid h-9 w-9 place-items-center rounded-full text-primary-foreground"><Truck className="h-4 w-4"/></span><span><span className="block text-sm font-medium">{t("feat.1.t")}</span><span className="block text-xs text-subtle">{t("feat.1.s")}</span></span></div><div className="flex items-start gap-3"><span className="bg-sodfa grid h-9 w-9 place-items-center rounded-full text-primary-foreground"><ShieldCheck className="h-4 w-4"/></span><span><span className="block text-sm font-medium">{t("hero.b2.t")}</span><span className="block text-xs text-subtle">{t("hero.b2.s")}</span></span></div></div>

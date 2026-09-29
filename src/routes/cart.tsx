@@ -6,6 +6,9 @@ import { createCustomerAccessToken, createStoreOrder, getLocalCustomerProfile, g
 import { useLang } from "@/lib/i18n";
 
 export const Route = createFileRoute("/cart")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    checkout: search.checkout === true || search.checkout === "true",
+  }),
   head: () => ({ meta: [{ title: "السلة | SODFA صدفة" }] }),
   component: CartPage,
 });
@@ -19,6 +22,7 @@ const GOVERNORATES = [
 
 function CartPage() {
   const { t, price } = useLang();
+  const { checkout } = Route.useSearch();
   const { lines, count, subtotal, setQty, remove, clear } = useCart();
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [name, setName] = useState("");
@@ -57,6 +61,14 @@ function CartPage() {
   useEffect(() => {
     listShippingRates().then(setShippingRates).catch((error) => console.error("Shipping rates failed:", error));
   }, []);
+
+  useEffect(() => {
+    if (checkout && lines.length) {
+      setError("");
+      setSubmitted(false);
+      setCheckoutOpen(true);
+    }
+  }, [checkout, lines.length]);
 
   const shipping = shippingRates.find((rate) => rate.governorate === governorate)?.price ?? 0;
   const total = subtotal + shipping;
