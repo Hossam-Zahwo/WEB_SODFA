@@ -6,7 +6,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { defaultHeroMobileBenefitConfig, defaultHeroMobileConfig, saveHeroConfig, uploadHeroImage, type HeroBenefitConfig, type HeroConfig, type HeroSlideConfig } from "@/lib/heroConfig";
+import { defaultHeroBenefitTextStyles, defaultHeroMobileBenefitConfig, defaultHeroMobileConfig, defaultHeroSpacingConfig, defaultHeroTextStyles, saveHeroConfig, uploadHeroImage, type HeroBenefitTextStyles, type HeroBenefitConfig, type HeroConfig, type HeroSlideConfig, type HeroTextStyle, type HeroTextStyles, type HeroSpacingConfig } from "@/lib/heroConfig";
 import { cn } from "@/lib/utils";
 
 const ICONS = [
@@ -37,7 +37,8 @@ export function createDefaultHeroConfig(images: string[]): HeroConfig {
     side: b.side as "left" | "right",
     vertical: b.vertical as "top" | "bottom",
     enabled: true,
-    mobile: { ...defaultHeroMobileBenefitConfig({ side: b.side as "left" | "right", vertical: b.vertical as "top" | "bottom" }), enabled: i < 3 },
+    spacing: defaultHeroSpacingConfig(),
+    mobile: { ...defaultHeroMobileBenefitConfig({ side: b.side as "left" | "right", vertical: b.vertical as "top" | "bottom" }), enabled: i < 3, spacing: defaultHeroSpacingConfig() },
   }));
   const data = [
     ["1", images[0] || "", "جراب يكمّل ستايلك", "A case that completes your style", "حماية شيك… تليق بموبايلك", "Smart protection, made for your phone", "جرابات مختارة بعناية، تجمع بين الشكل الحلو والحماية اللي تقدر تعتمد عليها كل يوم.", "Carefully selected cases that bring together a clean look and protection you can count on every day.", "شوف الجرابات", "Shop Cases", "cases"],
@@ -62,6 +63,7 @@ export function createDefaultHeroConfig(images: string[]): HeroConfig {
       contentPosition: "top",
       textAlign: "center",
       overlay: 0,
+      spacing: defaultHeroSpacingConfig(),
       mobile: {
         ...defaultHeroMobileConfig(),
         imageFit: "contain",
@@ -79,12 +81,12 @@ export function createDefaultHeroConfig(images: string[]): HeroConfig {
 }
 
 function Field({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) {
-  return <label className={cn("space-y-2 text-sm", className)}><span className="block font-semibold text-slate-700">{label}</span>{children}</label>;
+  return <label className={cn("space-y-1 text-sm", className)}><span className="block font-semibold text-white">{label}</span>{children}</label>;
 }
 
 function LangFields({ value, onChange, arLabel, enLabel, multiline = false }: { value: { ar: string; en: string }; onChange: (next: { ar: string; en: string }) => void; arLabel: string; enLabel: string; multiline?: boolean }) {
   const common = "w-full border-slate-200 bg-white text-slate-900";
-  return <div className="grid gap-3 sm:grid-cols-2">
+  return <div className="grid gap-2 sm:grid-cols-2">
     <Field label={`${arLabel} — عربي`}>{multiline ? <textarea rows={3} value={value.ar} onChange={(e) => onChange({ ...value, ar: e.target.value })} className={`${common} rounded-xl border p-3 outline-none focus:border-violet-400`} /> : <Input value={value.ar} onChange={(e) => onChange({ ...value, ar: e.target.value })} className={common} />}</Field>
     <Field label={`${enLabel} — English`}>{multiline ? <textarea rows={3} dir="ltr" value={value.en} onChange={(e) => onChange({ ...value, en: e.target.value })} className={`${common} rounded-xl border p-3 outline-none focus:border-violet-400`} /> : <Input dir="ltr" value={value.en} onChange={(e) => onChange({ ...value, en: e.target.value })} className={common} />}</Field>
   </div>;
@@ -92,6 +94,65 @@ function LangFields({ value, onChange, arLabel, enLabel, multiline = false }: { 
 
 function Select({ value, onChange, children }: { value: string; onChange: (value: string) => void; children: React.ReactNode }) {
   return <select value={value} onChange={(e) => onChange(e.target.value)} className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-violet-400">{children}</select>;
+}
+
+function TextStyleEditor({ label, value, onChange }: { label: string; value: HeroTextStyle; onChange: (next: HeroTextStyle) => void }) {
+  const v = { ...value };
+  const update = (patch: Partial<HeroTextStyle>) => onChange({ ...v, ...patch });
+  return <div className="rounded-xl border border-violet-100 bg-slate-900/95 p-3">
+    <div className="mb-2 flex items-center justify-between gap-2"><span className="text-xs font-bold text-white">{label}</span><Select value={v.mode} onChange={(mode) => update({ mode: mode as HeroTextStyle["mode"] })}><option value="solid">لون ثابت</option><option value="gradient">Gradient</option></Select></div>
+    {v.mode === "solid" ? <div className="grid grid-cols-[48px_1fr] items-center gap-2"><input type="color" value={v.color} onChange={(e) => update({ color: e.target.value })} className="h-10 w-12 cursor-pointer rounded-lg border border-white/20 bg-transparent p-1"/><Input value={v.color} onChange={(e) => update({ color: e.target.value })} className="border-white/15 bg-white text-slate-900" placeholder="#ffffff"/></div> : <div className="grid gap-2 sm:grid-cols-3">
+      <div className="grid grid-cols-[42px_1fr] items-center gap-2"><input type="color" value={v.gradientFrom} onChange={(e) => update({ gradientFrom: e.target.value })} className="h-10 w-10 cursor-pointer rounded-lg border border-white/20 bg-transparent p-1"/><Input value={v.gradientFrom} onChange={(e) => update({ gradientFrom: e.target.value })} className="border-white/15 bg-white text-slate-900" placeholder="#ffffff"/></div>
+      <div className="grid grid-cols-[42px_1fr] items-center gap-2"><input type="color" value={v.gradientTo} onChange={(e) => update({ gradientTo: e.target.value })} className="h-10 w-10 cursor-pointer rounded-lg border border-white/20 bg-transparent p-1"/><Input value={v.gradientTo} onChange={(e) => update({ gradientTo: e.target.value })} className="border-white/15 bg-white text-slate-900" placeholder="#7c3aed"/></div>
+      <Input type="number" min="0" max="360" value={v.gradientAngle} onChange={(e) => update({ gradientAngle: Number(e.target.value || 90) })} className="border-white/15 bg-white text-slate-900" placeholder="Angle"/>
+    </div>}
+  </div>;
+}
+
+function TextStylesEditor({ value, onChange, title = "ألوان النصوص" }: { value: HeroTextStyles; onChange: (next: HeroTextStyles) => void; title?: string }) {
+  const styles = { ...defaultHeroTextStyles(), ...(value || {}) };
+  const set = (key: keyof HeroTextStyles, next: HeroTextStyle) => onChange({ ...styles, [key]: next });
+  return <div className="rounded-2xl border border-violet-200 bg-violet-50/70 p-4">
+    <div className="mb-3 font-extrabold text-slate-900">{title}</div>
+    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+      <TextStyleEditor label="Label" value={styles.label} onChange={(v) => set("label", v)} />
+      <TextStyleEditor label="العنوان / Title" value={styles.title} onChange={(v) => set("title", v)} />
+      <TextStyleEditor label="الوصف / Description" value={styles.description} onChange={(v) => set("description", v)} />
+      <TextStyleEditor label="الزر الأساسي / Primary" value={styles.cta} onChange={(v) => set("cta", v)} />
+      <TextStyleEditor label="الزر الثاني / Secondary" value={styles.cta2} onChange={(v) => set("cta2", v)} />
+    </div>
+  </div>;
+}
+
+function SpacingEditor({ value, onChange, title = "المسافات والـPadding" }: { value: HeroSpacingConfig; onChange: (next: HeroSpacingConfig) => void; title?: string }) {
+  const v = { ...defaultHeroSpacingConfig(), ...(value || {}) };
+  const set = (key: keyof HeroSpacingConfig, raw: string) => onChange({ ...v, [key]: Number(raw || 0) });
+  const fields: Array<[keyof HeroSpacingConfig, string, number]> = [
+    ["contentPaddingTop", "Padding أعلى المحتوى", 100], ["contentPaddingRight", "Padding يمين المحتوى", 100],
+    ["contentPaddingBottom", "Padding أسفل المحتوى", 100], ["contentPaddingLeft", "Padding يسار المحتوى", 100],
+    ["labelTitle", "المسافة Label ↔ العنوان", 100], ["titleDescription", "المسافة العنوان ↔ الوصف", 100],
+    ["descriptionButtons", "المسافة الوصف ↔ الأزرار", 100], ["buttonGap", "المسافة بين الأزرار", 100],
+    ["benefitIconTitle", "المسافة الأيقونة ↔ عنوان الميزة", 100], ["benefitTitleDescription", "المسافة عنوان الميزة ↔ الوصف", 100],
+  ];
+  return <div className="mt-3 rounded-2xl border border-cyan-200 bg-cyan-50/70 p-4">
+    <div className="mb-3 font-extrabold text-slate-900">{title}</div>
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {fields.map(([key, label, max]) => <Field key={key} label={`${label} (px)`}>
+        <Input type="number" min="0" max={max} step="1" value={v[key]} onChange={(e) => set(key, e.target.value)} />
+      </Field>)}
+    </div>
+  </div>;
+}
+
+function BenefitTextStylesEditor({ value, onChange, title }: { value: HeroBenefitTextStyles; onChange: (next: HeroBenefitTextStyles) => void; title: string }) {
+  const styles = { ...defaultHeroBenefitTextStyles(), ...(value || {}) };
+  return <div className="mt-3 rounded-xl border border-violet-200 bg-violet-50/70 p-3">
+    <div className="mb-2 text-xs font-extrabold text-slate-900">{title}</div>
+    <div className="grid gap-2 sm:grid-cols-2">
+      <TextStyleEditor label="عنوان الميزة" value={styles.title} onChange={(v) => onChange({ ...styles, title: v })} />
+      <TextStyleEditor label="وصف الميزة" value={styles.description} onChange={(v) => onChange({ ...styles, description: v })} />
+    </div>
+  </div>;
 }
 
 export function HeroSliderAdmin({ initialImages }: { initialImages: string[] }) {
@@ -233,6 +294,8 @@ export function HeroSliderAdmin({ initialImages }: { initialImages: string[] }) 
               <LangFields value={slide.label} onChange={(label) => updateSlide(slide.id, { label })} arLabel="Label" enLabel="Label" />
               <LangFields value={slide.title} onChange={(title) => updateSlide(slide.id, { title })} arLabel="العنوان" enLabel="Title" />
               <LangFields value={slide.description} onChange={(description) => updateSlide(slide.id, { description })} arLabel="الوصف" enLabel="Description" multiline />
+              <TextStylesEditor title={editorMode === "mobile" ? "ألوان نصوص الموبايل" : "ألوان نصوص الديسكتوب"} value={{ ...defaultHeroTextStyles(), ...((editorMode === "mobile" ? slide.mobile?.textStyles : slide.textStyles) || {}) }} onChange={(textStyles) => editorMode === "mobile" ? updateMobile(slide.id, { textStyles }) : updateSlide(slide.id, { textStyles })} />
+              <SpacingEditor title={editorMode === "mobile" ? "المسافات والـPadding — الموبايل" : "المسافات والـPadding — الديسكتوب"} value={{ ...defaultHeroSpacingConfig(), ...((editorMode === "mobile" ? slide.mobile?.spacing : slide.spacing) || {}) }} onChange={(spacing) => editorMode === "mobile" ? updateMobile(slide.id, { spacing }) : updateSlide(slide.id, { spacing })} />
               <div className="grid gap-3 sm:grid-cols-2"><LangFields value={slide.cta} onChange={(cta) => updateSlide(slide.id, { cta })} arLabel="الزر الأساسي" enLabel="Primary CTA" /><LangFields value={slide.cta2} onChange={(cta2) => updateSlide(slide.id, { cta2 })} arLabel="الزر الثاني" enLabel="Secondary CTA" /></div>
               <Field label="الرابط عند الضغط على الزر الأساسي"><Input value={slide.link} onChange={(e) => updateSlide(slide.id, { link: e.target.value.replace(/^\//, "") })} placeholder="categories أو category/cases" className="border-slate-200" /></Field>
             </div>
@@ -321,6 +384,8 @@ export function HeroSliderAdmin({ initialImages }: { initialImages: string[] }) 
                       <Field label="الجانب"><Select value={benefit.side} onChange={(side) => updateBenefit(slide.id, benefit.id, { side: side as HeroBenefitConfig["side"] })}><option value="left">يسار</option><option value="right">يمين</option></Select></Field>
                       <Field label="الارتفاع"><Select value={benefit.vertical} onChange={(vertical) => updateBenefit(slide.id, benefit.id, { vertical: vertical as HeroBenefitConfig["vertical"] })}><option value="top">أعلى</option><option value="bottom">أسفل</option></Select></Field>
                     </div>
+                    <BenefitTextStylesEditor title="ألوان نصوص الميزة — الديسكتوب" value={{ ...defaultHeroBenefitTextStyles(), ...(benefit.textStyles || {}) }} onChange={(textStyles) => updateBenefit(slide.id, benefit.id, { textStyles })} />
+                    <SpacingEditor title="المسافات والـPadding — الميزة على الديسكتوب" value={{ ...defaultHeroSpacingConfig(), ...(benefit.spacing || {}) }} onChange={(spacing) => updateBenefit(slide.id, benefit.id, { spacing })} />
                     <div className="mt-3 rounded-xl border border-fuchsia-100 bg-fuchsia-50/50 p-3">
                       <div className="mb-3 text-xs font-bold text-fuchsia-900">إعدادات هذه الميزة على الموبايل فقط</div>
                       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -333,6 +398,8 @@ export function HeroSliderAdmin({ initialImages }: { initialImages: string[] }) 
                         <Field label="حجم عنوان الميزة"><Input type="number" min="6" max="13" step="0.5" value={m.titleSize} onChange={(e) => updateMobileBenefit(slide.id, benefit.id, { titleSize: Number(e.target.value || 9) })}/></Field>
                         <Field label="حجم وصف الميزة"><Input type="number" min="5" max="10" step="0.5" value={m.descriptionSize} onChange={(e) => updateMobileBenefit(slide.id, benefit.id, { descriptionSize: Number(e.target.value || 7) })}/></Field>
                       </div>
+                      <BenefitTextStylesEditor title="ألوان نصوص الميزة — الموبايل" value={{ ...defaultHeroBenefitTextStyles(), ...(m.textStyles || {}) }} onChange={(textStyles) => updateMobileBenefit(slide.id, benefit.id, { textStyles })} />
+                      <SpacingEditor title="المسافات والـPadding — الميزة على الموبايل" value={{ ...defaultHeroSpacingConfig(), ...(m.spacing || {}) }} onChange={(spacing) => updateMobileBenefit(slide.id, benefit.id, { spacing })} />
                     </div>
                   </div>
                 );

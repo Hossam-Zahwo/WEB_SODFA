@@ -4,8 +4,82 @@ export type HeroLangText = { ar: string; en: string };
 export type HeroBenefitSide = "left" | "right";
 export type HeroContentPosition = "top" | "center" | "bottom";
 export type HeroTextAlign = "left" | "center" | "right";
+export type HeroTextColorMode = "solid" | "gradient";
+export type HeroTextStyle = {
+  mode: HeroTextColorMode;
+  color: string;
+  gradientFrom: string;
+  gradientTo: string;
+  gradientAngle: number;
+};
+
+export const defaultHeroTextStyle = (color = "#17134f"): HeroTextStyle => ({
+  mode: "solid",
+  color,
+  gradientFrom: color,
+  gradientTo: color,
+  gradientAngle: 90,
+});
 export type HeroMobileVertical = "top" | "center" | "bottom";
 export type HeroMobileSide = "left" | "right";
+
+export type HeroSpacingConfig = {
+  contentPaddingTop: number;
+  contentPaddingRight: number;
+  contentPaddingBottom: number;
+  contentPaddingLeft: number;
+  labelTitle: number;
+  titleDescription: number;
+  descriptionButtons: number;
+  buttonGap: number;
+  benefitIconTitle: number;
+  benefitTitleDescription: number;
+};
+
+export function defaultHeroSpacingConfig(): HeroSpacingConfig {
+  return {
+    contentPaddingTop: 0,
+    contentPaddingRight: 0,
+    contentPaddingBottom: 0,
+    contentPaddingLeft: 0,
+    labelTitle: 18,
+    titleDescription: 12,
+    descriptionButtons: 26,
+    buttonGap: 14,
+    benefitIconTitle: 18,
+    benefitTitleDescription: 7,
+  };
+}
+
+export type HeroTextStyles = {
+  label: HeroTextStyle;
+  title: HeroTextStyle;
+  description: HeroTextStyle;
+  cta: HeroTextStyle;
+  cta2: HeroTextStyle;
+};
+
+export function defaultHeroTextStyles(): HeroTextStyles {
+  return {
+    label: defaultHeroTextStyle("#432493"),
+    title: defaultHeroTextStyle("#17134f"),
+    description: defaultHeroTextStyle("#655d91"),
+    cta: defaultHeroTextStyle("#ffffff"),
+    cta2: defaultHeroTextStyle("#6830c5"),
+  };
+}
+
+export type HeroBenefitTextStyles = {
+  title: HeroTextStyle;
+  description: HeroTextStyle;
+};
+
+export function defaultHeroBenefitTextStyles(): HeroBenefitTextStyles {
+  return {
+    title: defaultHeroTextStyle("#17134f"),
+    description: defaultHeroTextStyle("#665e90"),
+  };
+}
 
 export type HeroMobileBenefitConfig = {
   enabled: boolean;
@@ -17,6 +91,8 @@ export type HeroMobileBenefitConfig = {
   iconSize: number;
   titleSize: number;
   descriptionSize: number;
+  textStyles?: HeroBenefitTextStyles;
+  spacing?: HeroSpacingConfig;
 };
 
 export type HeroMobileConfig = {
@@ -37,6 +113,8 @@ export type HeroMobileConfig = {
   showDescription: boolean;
   showButtons: boolean;
   showBenefits: boolean;
+  textStyles?: HeroTextStyles;
+  spacing?: HeroSpacingConfig;
 };
 
 export function defaultHeroMobileConfig(): HeroMobileConfig {
@@ -58,6 +136,8 @@ export function defaultHeroMobileConfig(): HeroMobileConfig {
     showDescription: true,
     showButtons: true,
     showBenefits: true,
+    textStyles: defaultHeroTextStyles(),
+    spacing: defaultHeroSpacingConfig(),
   };
 }
 
@@ -72,6 +152,8 @@ export function defaultHeroMobileBenefitConfig(benefit: Pick<HeroBenefitConfig, 
     iconSize: 40,
     titleSize: 9,
     descriptionSize: 7,
+    textStyles: defaultHeroBenefitTextStyles(),
+    spacing: defaultHeroSpacingConfig(),
   };
 }
 
@@ -83,6 +165,8 @@ export type HeroBenefitConfig = {
   side: HeroBenefitSide;
   vertical: "top" | "bottom";
   enabled: boolean;
+  textStyles?: HeroBenefitTextStyles;
+  spacing?: HeroSpacingConfig;
   mobile?: HeroMobileBenefitConfig;
 };
 
@@ -101,6 +185,8 @@ export type HeroSlideConfig = {
   textAlign: HeroTextAlign;
   overlay: number;
   benefits: HeroBenefitConfig[];
+  textStyles?: HeroTextStyles;
+  spacing?: HeroSpacingConfig;
   mobile?: HeroMobileConfig;
 };
 
@@ -130,10 +216,14 @@ export function normalizeHeroConfig(config: HeroConfig): HeroConfig {
     slides: config.slides.map((slide) => ({
       ...slide,
       mobileImage: slide.mobileImage || slide.image,
-      mobile: { ...defaultHeroMobileConfig(), ...(slide.mobile || {}) },
+      textStyles: { ...defaultHeroTextStyles(), ...(slide.textStyles || {}) },
+      spacing: { ...defaultHeroSpacingConfig(), ...(slide.spacing || {}) },
+      mobile: { ...defaultHeroMobileConfig(), ...(slide.mobile || {}), textStyles: { ...defaultHeroTextStyles(), ...(slide.mobile?.textStyles || {}) }, spacing: { ...defaultHeroSpacingConfig(), ...(slide.mobile?.spacing || {}) } },
       benefits: (slide.benefits || []).map((benefit) => ({
         ...benefit,
-        mobile: { ...defaultHeroMobileBenefitConfig(benefit), ...(benefit.mobile || {}) },
+        textStyles: { ...defaultHeroBenefitTextStyles(), ...(benefit.textStyles || {}) },
+        spacing: { ...defaultHeroSpacingConfig(), ...(benefit.spacing || {}) },
+        mobile: { ...defaultHeroMobileBenefitConfig(benefit), ...(benefit.mobile || {}), textStyles: { ...defaultHeroBenefitTextStyles(), ...(benefit.mobile?.textStyles || {}) }, spacing: { ...defaultHeroSpacingConfig(), ...(benefit.mobile?.spacing || {}) } },
       })),
     })),
   };
