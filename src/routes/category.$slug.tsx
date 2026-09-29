@@ -3,18 +3,20 @@ import { useEffect, useMemo, useState } from "react";
 import { ProductGrid } from "@/components/ProductCard";
 import { DeviceFilter } from "@/components/DeviceFilter";
 import { useLang } from "@/lib/i18n";
-import { listCategories, listModels, listSeries, listStoreProducts, type DbModel, type DbSeries } from "@/lib/db";
+import { listCategories, listModels, listSeries, listStoreProductsPage, type DbModel, type DbSeries } from "@/lib/db";
 
 export const Route = createFileRoute("/category/$slug")({
   loader: async ({ params }) => {
-    const [categoryList, products, models, series] = await Promise.all([listCategories(), listStoreProducts(), listModels(), listSeries()]);
+    const [categoryList, productPage, models, series] = await Promise.all([listCategories(), listStoreProductsPage({ page: 0, pageSize: 16 }), listModels(), listSeries()]);
     const category = categoryList.find((item) => item.slug === params.slug);
     if (!category) throw notFound();
     return {
       category,
       models,
       series,
-      products: products.filter((product) => product.categoryId === category.id || product.variants.some((v) => v.categoryId === category.id)),
+      products: productPage.products.filter((product) => product.categoryId === category.id || product.variants.some((v) => v.categoryId === category.id)),
+      hasMore: productPage.hasMore,
+      page: productPage.page,
     };
   },
   head: ({ loaderData }) => {
@@ -30,6 +32,10 @@ function CategoryPage() {
   const { pick, t } = useLang();
   const [selectedModel, setSelectedModel] = useState<string | undefined>();
   const [selectedSeries, setSelectedSeries] = useState<string | undefined>();
+  const [products, setProducts] = useState(data.products);
+  const [page, setPage] = useState(data.page);
+  const [hasMore, setHasMore] = useState(data.hasMore);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
     if (!selectedSeries && selectedModel) {
@@ -38,18 +44,30 @@ function CategoryPage() {
     }
   }, [data.models, selectedModel, selectedSeries]);
 
+  const loadMore = async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    try {
+      const result = await listStoreProductsPage({ page: page + 1, pageSize: 16 });
+      const categoryProducts = result.products.filter((product) => product.categoryId === data.category.id || product.variants.some((v) => v.categoryId === data.category.id));
+      setProducts((current) => [...current, ...categoryProducts.filter((item) => !current.some((existing) => existing.id === item.id))]);
+      setPage(result.page);
+      setHasMore(result.hasMore);
+    } finally { setLoadingMore(false); }
+  };
+
   const modelIds = useMemo(() => {
     const ids = new Set<string>();
-    data.products.forEach((p) => {
+    products.forEach((p) => {
       if (p.modelId) ids.add(p.modelId);
       p.variants.forEach((v) => v.modelId && ids.add(v.modelId));
     });
     return ids;
-  }, [data.products]);
+  }, [products]);
 
   const filtered = useMemo(
-    () => data.products.filter((p) => { const seriesIds = new Set(data.models.filter(m => m.series_id === selectedSeries).map(m => m.id)); const okSeries = !selectedSeries || (p.modelId ? seriesIds.has(p.modelId) : false) || p.variants.some(v => v.modelId ? seriesIds.has(v.modelId) : false); const okModel = !selectedModel || p.modelId === selectedModel || p.variants.some(v => v.modelId === selectedModel); return okSeries && okModel; }),
-    [data.products, data.models, selectedModel, selectedSeries],
+    () => products.filter((p) => { const seriesIds = new Set(data.models.filter(m => m.series_id === selectedSeries).map(m => m.id)); const okSeries = !selectedSeries || (p.modelId ? seriesIds.has(p.modelId) : false) || p.variants.some(v => v.modelId ? seriesIds.has(v.modelId) : false); const okModel = !selectedModel || p.modelId === selectedModel || p.variants.some(v => v.modelId === selectedModel); return okSeries && okModel; }),
+    [products, data.models, selectedModel, selectedSeries],
   );
 
   return (
@@ -63,7 +81,7 @@ function CategoryPage() {
       </div>
 
       <div className="mt-8">
-        {selectedSeries && !selectedModel ? <p className="py-16 text-center text-sm text-subtle">{t("filter.chooseModel")}</p> : filtered.length ? <ProductGrid products={filtered} selectedModelId={selectedModel} /> : <p className="py-16 text-center text-sm text-subtle">{t("filter.noProducts")}</p>}
+        {selectedSeries && !selectedModel ? <p className="py-16 text-center text-sm text-subtle">{t("filter.chooseModel")}</p> : filtered.length ? <> <ProductGrid products={filtered} selectedModelId={selectedModel} /> {hasMore && <div className="mt-8 flex justify-center"><button type="button" onClick={() => void loadMore()} disabled={loadingMore} className="rounded-full border border-border px-6 py-3 text-sm font-semibold transition hover:border-primary/40 disabled:opacity-50">{loadingMore ? "جارٍ تحميل المزيد..." : "تحميل المزيد"}</button></div>} </> : <p className="py-16 text-center text-sm text-subtle">{t("filter.noProducts")}</p>}
       </div>
     </div>
   );

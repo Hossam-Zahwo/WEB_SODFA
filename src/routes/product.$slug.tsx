@@ -1,12 +1,12 @@
 import { createFileRoute, notFound, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Check, ChevronLeft, ChevronRight, Minus, Plus, ShieldCheck, Truck, Layers3, Star } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Minus, Plus, ShieldCheck, Truck, Star } from "lucide-react";
 import { SmartImage } from "@/components/SmartImage";
 import { ProductCard, ProductGrid } from "@/components/ProductCard";
 import { Section } from "@/components/Section";
 import { useLang } from "@/lib/i18n";
 import { useCart } from "@/lib/cart";
-import { getStoreProduct, listProductReviews, listStoreProducts, type StoreVariant } from "@/lib/db";
+import { getStoreProduct, listProductReviews, listRelatedStoreProducts, type StoreVariant } from "@/lib/db";
 import { cn } from "@/lib/utils";
 
 type Search = { variant?: string };
@@ -18,11 +18,8 @@ export const Route = createFileRoute("/product/$slug")({
   loader: async ({ params }) => {
     const product = await getStoreProduct(params.slug);
     if (!product) throw notFound();
-    const all = await listStoreProducts();
-    return {
-      product,
-      related: all.filter((p) => p.categoryId === product.categoryId && p.id !== product.id).slice(0, 4),
-    };
+    const related = await listRelatedStoreProducts(product.categoryId, product.id, 4);
+    return { product, related };
   },
   head: ({ loaderData }) => {
     if (!loaderData) return { meta: [{ title: "غير متاح | SODFA" }] };
@@ -72,15 +69,10 @@ function ProductPage() {
     return () => window.clearInterval(id);
   }, [gallery.length, paused]);
 
-  const variantTypeLabels: Record<string, { ar: string; en: string }> = { color: { ar: "اللون", en: "Color" }, model: { ar: "الموديل", en: "Model" }, size: { ar: "المقاس", en: "Size" }, storage: { ar: "السعة", en: "Storage" }, material: { ar: "الخامة", en: "Material" }, other: { ar: "الاختيار", en: "Option" } };
+  const variantTypeLabels: Record<string, { ar: string; en: string }> = { color: { ar: "اللون", en: "Color" }, model: { ar: "الموديل", en: "Model" }, size: { ar: "المقاس", en: "Size" }, storage: { ar: "السعة", en: "Storage" }, material: { ar: "الخامة", en: "Material" }, shape: { ar: "الشكل", en: "Shape" }, other: { ar: "الاختيار", en: "Option" } };
   const variantLabel = (variant?: StoreVariant) => variant ? `${variantTypeLabels[variant.type || "other"]?.[lang] || (lang === "ar" ? "الاختيار" : "Option")}: ${variant.value || variant.name}` : "";
 
-  const activeName = selectedVariant
-    ? pick(
-        selectedVariant.nameAr || selectedVariant.value || product.name.ar,
-        selectedVariant.nameEn || selectedVariant.value || product.name.en,
-      )
-    : pick(product.name.ar, product.name.en);
+  const activeName = pick(product.name.ar, product.name.en);
   const activeDescription = selectedVariant
     ? pick(selectedVariant.descriptionAr ?? product.description.ar, selectedVariant.descriptionEn ?? product.description.en)
     : pick(product.description.ar, product.description.en);
@@ -137,12 +129,10 @@ function ProductPage() {
 
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              {selectedVariant && <span className="flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[11px] text-primary-light"><Layers3 size={12}/> {variantLabel(selectedVariant)}</span>}
               <span className="rounded-full border border-border px-3 py-1 text-[11px] text-subtle">{product.category || "SODFA"}</span>
             </div>
             <h1 className="mt-4 break-words text-2xl font-bold leading-tight sm:text-4xl">{activeName}</h1>
             {activeModelName && <div className="mt-2 flex items-center gap-2 text-sm text-subtle">{!selectedVariant && product.model?.image && <SmartImage src={product.model.image} alt="" className="h-8 w-8 rounded-md" ratio="square" imgClassName="object-contain bg-white"/>}<span>{activeModelName}</span></div>}
-            {selectedVariant && <p className="mt-2 text-sm text-subtle">{variantLabel(selectedVariant)}</p>}
             <div className="mt-4 flex flex-wrap items-baseline gap-3">
               {activeInStock && (
                 <>
@@ -159,10 +149,10 @@ function ProductPage() {
                 <div className="flex items-center justify-between"><span className="text-xs tracking-widest text-subtle uppercase">{t("product.variants")}</span><span className="text-[11px] text-subtle">{product.variants.length} {t("product.variantCount")}</span></div>
                 <div className="mt-3 grid gap-2 sm:grid-cols-2">
                   <button type="button" onClick={() => setSelectedVariantId(undefined)} className={cn("flex items-center gap-3 rounded-xl border p-3 text-start", !selectedVariant ? "border-primary bg-primary/10" : "border-border")}>
-                    <SmartImage src={product.images[0] || "/placeholder.svg"} alt={pick(product.name.ar, product.name.en)} className="h-12 w-12 shrink-0 rounded-lg" ratio="square" imgClassName="object-contain bg-white p-1"/><span className="min-w-0"><span className="block truncate text-sm font-semibold">{baseModelName}</span><span className="block truncate text-xs text-subtle">{t("product.model")}</span>{product.inStock && <span className="text-xs text-subtle">{price(product.price)}</span>}</span>
+                    <SmartImage src={product.images[0] || "/placeholder.svg"} alt={pick(product.name.ar, product.name.en)} className="h-12 w-12 shrink-0 rounded-lg" ratio="square" imgClassName="object-contain bg-white p-1"/><span className="min-w-0"><span className="block truncate text-sm font-semibold">{product.variantDisplayName ? pick(product.variantDisplayName.ar, product.variantDisplayName.en) : product.variantValue || baseModelName}</span><span className="block truncate text-xs text-subtle">{product.variantType ? (variantTypeLabels[product.variantType]?.[lang] || t("product.model")) : t("product.model")}</span>{product.inStock && <span className="text-xs text-subtle">{price(product.price)}</span>}</span>
                   </button>
                   {product.variants.map((v) => <button type="button" key={v.id} onClick={() => chooseVariant(v)} className={cn("flex items-center gap-3 rounded-xl border p-3 text-start", selectedVariant?.id === v.id ? "border-primary bg-primary/10" : "border-border")}>
-                    <SmartImage src={v.primaryImage || "/placeholder.svg"} alt={variantLabel(v)} className="h-12 w-12 shrink-0 rounded-lg bg-white" ratio="square" imgClassName="object-contain bg-white p-1"/><span className="min-w-0"><span className="block truncate text-sm font-semibold">{v.value || v.name}</span><span className="block truncate text-xs text-subtle">{variantTypeLabels[v.type || "other"]?.[lang] || (lang === "ar" ? "الاختلاف" : "Option")}</span>{v.inStock && <span className="text-xs text-subtle">{price(v.price)}</span>}</span>
+                    <SmartImage src={v.primaryImage || "/placeholder.svg"} alt={variantLabel(v)} className="h-12 w-12 shrink-0 rounded-lg bg-white" ratio="square" imgClassName="object-contain bg-white p-1"/><span className="min-w-0"><span className="block truncate text-sm font-semibold">{v.value || v.shape || v.name}</span><span className="block truncate text-xs text-subtle">{variantTypeLabels[v.type || "other"]?.[lang] || (lang === "ar" ? "الاختلاف" : "Option")}</span>{v.inStock && <span className="text-xs text-subtle">{price(v.price)}</span>}</span>
                   </button>)}
                 </div>
               </div>
@@ -180,22 +170,18 @@ function ProductPage() {
           </div>
         </div>
       </div>
-      <Section title={`تقييمات المنتج (${reviews.length})`}>
-        {reviews.length === 0 ? (
-          <div className="rounded-2xl border border-border bg-card p-6 text-center text-sm text-subtle">لسه مفيش تقييمات منشورة للمنتج.</div>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2">
-            {reviews.map((r) => <article key={r.id} className="rounded-2xl border border-border bg-card p-5">
-              <div className="flex items-center justify-between gap-3">
-                <div><p className="font-bold">{r.customer_name || "عميل SODFA"}</p><p className="mt-1 text-xs text-subtle">{r.created_at ? new Date(r.created_at).toLocaleDateString("ar-EG") : ""}</p></div>
-                <div className="flex" dir="ltr">{[1,2,3,4,5].map((n) => <Star key={n} size={15} className={n <= Number(r.rating) ? "fill-amber-400 text-amber-400" : "text-slate-500"}/>)}</div>
-              </div>
-              {r.review_text && <p className="mt-4 text-sm leading-7 text-muted-foreground">{r.review_text}</p>}
-              {r.image_url && <img src={r.image_url} alt="" className="mt-4 h-28 w-28 rounded-xl object-cover bg-white"/>}
-            </article>)}
-          </div>
-        )}
-      </Section>
+      {reviews.length > 0 && <Section title={`تقييمات المنتج (${reviews.length})`}>
+        <div className="grid gap-4 md:grid-cols-2">
+          {reviews.map((r) => <article key={r.id} className="rounded-2xl border border-border bg-card p-5">
+            <div className="flex items-center justify-between gap-3">
+              <div><p className="font-bold">{r.customer_name || "عميل SODFA"}</p><p className="mt-1 text-xs text-subtle">{r.created_at ? new Date(r.created_at).toLocaleDateString("ar-EG") : ""}</p></div>
+              <div className="flex" dir="ltr">{[1,2,3,4,5].map((n) => <Star key={n} size={15} className={n <= Number(r.rating) ? "fill-amber-400 text-amber-400" : "text-slate-500"}/>)}</div>
+            </div>
+            {r.review_text && <p className="mt-4 text-sm leading-7 text-muted-foreground">{r.review_text}</p>}
+            {r.image_url && <img src={r.image_url} alt="" className="mt-4 h-28 w-28 rounded-xl object-cover bg-white" loading="lazy" decoding="async" />}
+          </article>)}
+        </div>
+      </Section>}
       {product.variants.length > 0 && <Section title={t("product.variants")}><div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{product.variants.map((v) => <ProductCard key={v.id} product={product} variant={v}/>)}</div></Section>}
       {related.length > 0 && <Section title={t("product.related")}><ProductGrid products={related}/></Section>}
     </>

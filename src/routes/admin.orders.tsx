@@ -147,13 +147,37 @@ function OrdersAdmin() {
       <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white p-6 text-black shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between gap-4"><div><h2 className="text-2xl font-black">تفاصيل الطلب</h2><p className="mt-1 text-sm text-slate-500">#{details.order_number || details.id}</p></div><button onClick={() => setDetails(null)} className="grid h-9 w-9 place-items-center rounded-full border border-slate-200"><X size={18}/></button></div>
         <div className="mt-5 grid gap-3 sm:grid-cols-2 text-sm">
-          <div><b>العميل:</b> {details.customer_name || "-"}</div><div><b>الموبايل:</b> {details.customer_phone || "-"}</div>
-          <div><b>التاريخ:</b> {new Date(details.created_at).toLocaleString("ar-EG")}</div><div><b>الحالة:</b> {statuses.find((x) => x[0] === details.status)?.[1] || details.status}</div>
-          <div className="sm:col-span-2"><b>العنوان:</b> {details.governorate || ""} — {details.address || "-"}</div>
+          <div><b>اسم العميل:</b> {details.customer_name || "-"}</div>
+          <div><b>رقم الطلب:</b> #{details.order_number || details.id}</div>
+          <div><b>رقم الهاتف:</b> {details.customer_phone || "-"}</div>
+          <div><b>تاريخ الطلب:</b> {details.created_at ? new Date(details.created_at).toLocaleString("ar-EG") : "-"}</div>
+          <div><b>الحالة:</b> {statuses.find((x) => x[0] === details.status)?.[1] || details.status || "-"}</div>
+          {details.payment_method && <div><b>طريقة الدفع:</b> {details.payment_method}</div>}
+          {details.payment_status && <div><b>حالة الدفع:</b> {details.payment_status}</div>}
+          {details.shipping_method && <div><b>طريقة الشحن:</b> {details.shipping_method}</div>}
+          <div className="sm:col-span-2"><b>عنوان العميل:</b> {[details.governorate, details.city, details.area, details.address].filter(Boolean).join(" — ") || "-"}</div>
+          {details.postal_code && <div><b>الرمز البريدي:</b> {details.postal_code}</div>}
           {details.notes && <div className="sm:col-span-2"><b>ملاحظات:</b> {details.notes}</div>}
         </div>
         <div className="mt-6 rounded-2xl border border-slate-200">
-          {(orderItems[details.id] || []).map((item) => <div key={item.id} className="flex justify-between gap-4 border-b border-slate-100 p-4 last:border-b-0"><div><p className="font-bold">{item.product_name}</p>{item.variant_name && <p className="mt-1 text-xs text-slate-500">{item.variant_name}</p>}<p className="mt-1 text-xs text-slate-500">الكمية: {item.quantity} · سعر الوحدة: {money(item.unit_price)}</p></div><strong>{money(item.total_price)}</strong></div>)}
+          {(orderItems[details.id] || []).map((item, index) => <div key={item.id || `${details.id}-${index}`} className="border-b border-slate-100 p-4 last:border-b-0">
+            <div className="flex justify-between gap-4">
+              <div className="min-w-0">
+                <p className="font-bold">{item.product_name || item.name_ar || item.name_en || "منتج"}</p>
+                {item.variant_name && <p className="mt-1 text-xs text-slate-500">التفريعة: {item.variant_name}</p>}
+                {item.shape && <p className="mt-1 text-xs text-slate-500">الشكل: {item.shape}</p>}
+                <div className="mt-2 grid gap-1 text-xs text-slate-500 sm:grid-cols-2">
+                  <span>الكمية: {item.quantity ?? 0}</span>
+                  <span>سعر الوحدة: {money(item.unit_price)}</span>
+                  {item.sku && <span>SKU: {item.sku}</span>}
+                  {item.barcode && <span>Barcode: {item.barcode}</span>}
+                  {item.product_id && <span>Product ID: {item.product_id}</span>}
+                  {item.variant_id && <span>Variant ID: {item.variant_id}</span>}
+                </div>
+              </div>
+              <strong className="shrink-0">{money(item.total_price ?? (Number(item.unit_price || 0) * Number(item.quantity || 0)))}</strong>
+            </div>
+          </div>)}
         </div>
         <div className="mt-5 space-y-2 text-sm"><div className="flex justify-between"><span>المجموع</span><b>{money(details.subtotal ?? details.subtotal_amount)}</b></div><div className="flex justify-between"><span>الشحن</span><b>{money(details.shipping ?? details.shipping_cost)}</b></div><div className="flex justify-between border-t border-slate-200 pt-3 text-lg font-black"><span>الإجمالي</span><b>{money(details.total ?? details.total_amount)}</b></div></div>
       </div>

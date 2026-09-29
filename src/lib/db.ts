@@ -37,6 +37,9 @@ export type DbProduct = {
   slug: string;
   name_ar: string;
   name_en: string;
+  variant_display_name?: string | null;
+  variant_type?: string | null;
+  variant_value?: string | null;
   description_ar: string | null;
   description_en: string | null;
   color?: string | null;
@@ -62,6 +65,7 @@ export type DbProductVariant = {
   variant_name: string;
   variant_type: string | null;
   variant_value: string | null;
+  shape?: string | null;
   slug?: string | null;
   category_id?: string | null;
   model_id?: string | null;
@@ -112,6 +116,8 @@ export type StoreVariant = {
   categoryId?: string | null;
   modelId?: string | null;
   type?: string;
+  value?: string;
+  shape?: string;
   color?: string;
   price: number;
   oldPrice?: number;
@@ -128,6 +134,9 @@ export type StoreProduct = {
   sku?: string | null;
   barcode?: string | null;
   name: { ar: string; en: string };
+  variantDisplayName?: { ar: string; en: string };
+  variantType?: string;
+  variantValue?: string;
   description: { ar: string; en: string };
   category: string;
   categoryId: string | null;
@@ -159,7 +168,7 @@ export async function dashboardStats() {
 export async function listProducts() {
   const { data, error } = await supabase
     .from("products")
-    .select("id,slug,name_ar,name_en,description_ar,description_en,color,category_id,model_id,base_price,sale_price,final_price,stock_quantity,is_active,is_featured,is_bestseller,is_new,barcode,sku,created_at,updated_at")
+    .select("id,slug,name_ar,name_en,description_ar,description_en,color,variant_display_name,variant_type,variant_value,category_id,model_id,base_price,sale_price,final_price,stock_quantity,is_active,is_featured,is_bestseller,is_new,barcode,sku,created_at,updated_at")
     .order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []).map((p: any): DbProduct => ({
@@ -167,6 +176,9 @@ export async function listProducts() {
     slug: p.slug,
     name_ar: p.name_ar || "",
     name_en: p.name_en || "",
+    variant_display_name: p.variant_display_name ?? null,
+    variant_type: p.variant_type ?? null,
+    variant_value: p.variant_value ?? null,
     description_ar: p.description_ar ?? null,
     description_en: p.description_en ?? null,
     color: p.color ?? null,
@@ -230,15 +242,11 @@ export async function listModels() {
   return (data ?? []) as DbModel[];
 }
 
-/**
- * These columns are the stable variant fields used by the rebuilt SODFA schema.
- * The SQL migration shipped beside this ZIP adds the three display fields if
- * they are missing from an older database.
- */
+/** Stable product-variant fields used by the current SODFA schema. */
 export async function listProductVariants(productIds?: string[]) {
   let query = supabase
     .from("product_variants")
-    .select("id,product_id,sku,barcode,color,base_price,sale_price,final_price,stock_quantity,is_active,display_order,variant_name,variant_type,variant_value,name_ar,name_en,slug,description_ar,description_en,category_id,model_id,is_featured,is_bestseller,is_new,created_at,updated_at")
+    .select("id,product_id,sku,barcode,color,base_price,sale_price,final_price,stock_quantity,is_active,display_order,variant_name,variant_type,variant_value,shape,name_ar,name_en,slug,description_ar,description_en,category_id,model_id,is_featured,is_bestseller,is_new,created_at,updated_at")
     .order("display_order", { ascending: true })
     .order("created_at", { ascending: true });
   if (productIds?.length) query = query.in("product_id", productIds);
@@ -250,6 +258,7 @@ export async function listProductVariants(productIds?: string[]) {
     variant_name: v.variant_name || v.variant_value || v.color || "Variant",
     variant_type: v.variant_type ?? (v.color ? "color" : "variant"),
     variant_value: v.variant_value ?? v.color ?? null,
+    shape: v.shape ?? null,
     barcode: v.barcode ?? null,
     sku: v.sku ?? null,
     name_ar: v.name_ar ?? null,
@@ -362,7 +371,7 @@ function toStoreProduct(
     const oldPrice = variant.old_price != null && Number(variant.old_price) > price ? Number(variant.old_price) : undefined;
     return {
       id: variant.id,
-      name: variant.name_ar || variant.name_en || variant.variant_value || product.name_ar || product.name_en,
+      name: variant.variant_name || variant.shape || variant.name_ar || variant.name_en || variant.variant_value || product.name_ar || product.name_en,
       nameAr: variant.name_ar || undefined,
       nameEn: variant.name_en || undefined,
       descriptionAr: variant.description_ar ?? product.description_ar ?? "",
@@ -371,6 +380,7 @@ function toStoreProduct(
       categoryId: variant.category_id ?? product.category_id,
       modelId: variant.model_id ?? product.model_id ?? null,
       type: variant.variant_type ?? undefined,
+      shape: variant.shape ?? undefined,
       value: variant.variant_value ?? undefined,
       color: variant.color ?? undefined,
       price,
@@ -407,6 +417,9 @@ function toStoreProduct(
     sku: product.sku,
     barcode: product.barcode,
     name: { ar: product.name_ar, en: product.name_en },
+    variantDisplayName: product.variant_display_name ? { ar: product.variant_display_name, en: product.variant_display_name } : undefined,
+    variantType: product.variant_type ?? undefined,
+    variantValue: product.variant_value ?? undefined,
     description: {
       ar: product.description_ar ?? "",
       en: product.description_en ?? product.description_ar ?? "",
@@ -426,6 +439,134 @@ function toStoreProduct(
     ratingAverage: rating?.average ?? 0,
     ratingCount: rating?.count ?? 0,
   };
+}
+
+
+export type StoreProductPageOptions = {
+  page?: number;
+  pageSize?: number;
+  featured?: boolean;
+  newest?: boolean;
+  onSale?: boolean;
+};
+
+export async function listStoreProductsPage(options: StoreProductPageOptions = {}) {
+  const page = Math.max(0, Number(options.page ?? 0));
+  const pageSize = Math.min(48, Math.max(1, Number(options.pageSize ?? 12)));
+  const from = page * pageSize;
+  const to = from + pageSize - 1;
+
+  let query = supabase
+    .from("products")
+    .select("id,slug,name_ar,name_en,description_ar,description_en,color,variant_display_name,variant_type,variant_value,category_id,model_id,base_price,sale_price,final_price,stock_quantity,is_active,is_featured,is_bestseller,is_new,barcode,sku,created_at,updated_at", { count: "exact" })
+    .eq("is_active", true);
+
+  if (options.featured) query = query.eq("is_featured", true);
+  if (options.newest) query = query.eq("is_new", true);
+
+  const { data, error, count } = await query
+    .order("created_at", { ascending: false })
+    .range(from, to);
+  if (error) throw error;
+
+  const products = (data ?? []).map((p: any): DbProduct => ({
+    id: p.id,
+    slug: p.slug,
+    name_ar: p.name_ar || "",
+    name_en: p.name_en || "",
+    variant_display_name: p.variant_display_name ?? null,
+    variant_type: p.variant_type ?? null,
+    variant_value: p.variant_value ?? null,
+    description_ar: p.description_ar ?? null,
+    description_en: p.description_en ?? null,
+    color: p.color ?? null,
+    category_id: p.category_id ?? null,
+    model_id: p.model_id ?? null,
+    price: Number(p.final_price) > 0 ? Number(p.final_price) : Number(p.sale_price) > 0 ? Number(p.sale_price) : 0,
+    old_price: Number(p.base_price ?? 0) > 0 && Number(p.base_price) > (Number(p.final_price) > 0 ? Number(p.final_price) : Number(p.sale_price) > 0 ? Number(p.sale_price) : 0) ? Number(p.base_price) : null,
+    stock: Number(p.stock_quantity ?? 0),
+    in_stock: Boolean(p.is_active && Number(p.stock_quantity ?? 0) > 0),
+    featured: Boolean(p.is_featured),
+    best_seller: Boolean(p.is_bestseller),
+    is_new: Boolean(p.is_new),
+    barcode: p.barcode ?? null,
+    sku: p.sku ?? null,
+    is_active: Boolean(p.is_active),
+    created_at: p.created_at,
+    updated_at: p.updated_at,
+  }));
+
+  if (!products.length) return { products: [] as StoreProduct[], page, pageSize, total: count ?? 0, hasMore: false };
+
+  const productIds = products.map((product) => product.id);
+  const categoryIds = [...new Set(products.map((product) => product.category_id).filter(Boolean))] as string[];
+  const modelIds = [...new Set(products.map((product) => product.model_id).filter(Boolean))] as string[];
+
+  const [categoriesResult, modelsResult, variantsResult, imagesResult, ratings] = await Promise.all([
+    categoryIds.length
+      ? supabase.from("categories").select("id,slug,name_ar,name_en,image_url,created_at").in("id", categoryIds)
+      : Promise.resolve({ data: [], error: null } as any),
+    modelIds.length
+      ? supabase.from("product_models").select("id,slug,name_ar,name_en,image_url,storage_path,series_id,created_at").in("id", modelIds)
+      : Promise.resolve({ data: [], error: null } as any),
+    listProductVariants(productIds),
+    listProductImages(productIds),
+    listProductRatingSummary(productIds),
+  ]);
+
+  if (categoriesResult.error) throw categoriesResult.error;
+  if (modelsResult.error) throw modelsResult.error;
+
+  const categoryMap = new Map(((categoriesResult.data ?? []) as DbCategory[]).map((category) => [category.id, category]));
+  const modelMap = new Map(((modelsResult.data ?? []) as DbModel[]).map((model) => [model.id, model]));
+  const variants = variantsResult;
+  const images = imagesResult;
+
+  return {
+    products: products.map((product) => toStoreProduct(
+      product,
+      product.category_id ? categoryMap.get(product.category_id) : undefined,
+      variants,
+      images,
+      ratings.get(product.id),
+      product.model_id ? modelMap.get(product.model_id) : undefined,
+    )),
+    page,
+    pageSize,
+    total: count ?? 0,
+    hasMore: from + products.length < (count ?? 0),
+  };
+}
+
+
+export async function listRelatedStoreProducts(categoryId: string | null, excludeId: string, limit = 4): Promise<StoreProduct[]> {
+  if (!categoryId) return [];
+  const { data, error } = await supabase
+    .from("products")
+    .select("id,slug,name_ar,name_en,description_ar,description_en,color,variant_display_name,variant_type,variant_value,category_id,model_id,base_price,sale_price,final_price,stock_quantity,is_active,is_featured,is_bestseller,is_new,barcode,sku,created_at,updated_at")
+    .eq("is_active", true)
+    .eq("category_id", categoryId)
+    .neq("id", excludeId)
+    .order("created_at", { ascending: false })
+    .limit(Math.max(1, Math.min(limit, 12)));
+  if (error) throw error;
+  if (!data?.length) return [];
+  const products = data.map((p: any): DbProduct => ({
+    id: p.id, slug: p.slug, name_ar: p.name_ar || "", name_en: p.name_en || "",
+    variant_display_name: p.variant_display_name ?? null,
+    variant_type: p.variant_type ?? null,
+    variant_value: p.variant_value ?? null,
+    description_ar: p.description_ar ?? null, description_en: p.description_en ?? null,
+    color: p.color ?? null, category_id: p.category_id ?? null, model_id: p.model_id ?? null,
+    price: Number(p.final_price) > 0 ? Number(p.final_price) : Number(p.sale_price) > 0 ? Number(p.sale_price) : 0,
+    old_price: Number(p.base_price ?? 0) > 0 && Number(p.base_price) > (Number(p.final_price) > 0 ? Number(p.final_price) : Number(p.sale_price) > 0 ? Number(p.sale_price) : 0) ? Number(p.base_price) : null,
+    stock: Number(p.stock_quantity ?? 0), in_stock: Boolean(p.is_active && Number(p.stock_quantity ?? 0) > 0),
+    featured: Boolean(p.is_featured), best_seller: Boolean(p.is_bestseller), is_new: Boolean(p.is_new),
+    barcode: p.barcode ?? null, sku: p.sku ?? null, is_active: Boolean(p.is_active), created_at: p.created_at, updated_at: p.updated_at,
+  }));
+  const ids = products.map((p) => p.id);
+  const [variants, images, ratings] = await Promise.all([listProductVariants(ids), listProductImages(ids), listProductRatingSummary(ids)]);
+  return products.map((product) => toStoreProduct(product, undefined, variants, images, ratings.get(product.id)));
 }
 
 export async function listStoreProducts(): Promise<StoreProduct[]> {
@@ -458,7 +599,7 @@ export async function getStoreProduct(slug: string): Promise<StoreProduct | null
 
   const { data: row, error } = await supabase
     .from("products")
-    .select("id,slug,name_ar,name_en,description_ar,description_en,color,category_id,model_id,base_price,sale_price,final_price,stock_quantity,is_active,is_featured,is_bestseller,is_new,barcode,sku,created_at,updated_at")
+    .select("id,slug,name_ar,name_en,description_ar,description_en,color,variant_display_name,variant_type,variant_value,category_id,model_id,base_price,sale_price,final_price,stock_quantity,is_active,is_featured,is_bestseller,is_new,barcode,sku,created_at,updated_at")
     .eq("slug", cleanSlug)
     .maybeSingle();
   if (error) throw error;
@@ -466,6 +607,7 @@ export async function getStoreProduct(slug: string): Promise<StoreProduct | null
 
   const product: DbProduct = {
     id: row.id, slug: row.slug, name_ar: row.name_ar || "", name_en: row.name_en || "",
+    variant_display_name: row.variant_display_name ?? null,
     description_ar: row.description_ar ?? null, description_en: row.description_en ?? null,
     category_id: row.category_id ?? null, model_id: row.model_id ?? null, price: Number(row.final_price) > 0 ? Number(row.final_price) : 0,
     old_price: Number(row.base_price ?? 0) > 0 ? Number(row.base_price) : null,

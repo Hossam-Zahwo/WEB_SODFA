@@ -21,7 +21,7 @@ export function CustomerReviews() {
             <article key={review.id} className="relative overflow-hidden rounded-3xl border border-border bg-card/80 p-5 shadow-card backdrop-blur transition-all duration-500 hover:-translate-y-1 hover:shadow-lg sm:p-6">
               <Quote className="absolute -left-1 -top-2 h-20 w-20 text-primary/10" />
               <div className="relative flex items-center gap-3">
-                {review.customer_image_url ? <img src={review.customer_image_url} alt={review.customer_name} className="h-12 w-12 rounded-full object-cover ring-2 ring-primary/20" /> : <div className="grid h-12 w-12 place-items-center rounded-full bg-gradient-to-br from-primary-light/30 to-primary/10 font-bold text-primary-light">{review.customer_name.slice(0,1)}</div>}
+                {review.customer_image_url ? <img src={review.customer_image_url} alt={review.customer_name} className="h-12 w-12 rounded-full object-cover ring-2 ring-primary/20" loading="lazy" decoding="async" /> : <div className="grid h-12 w-12 place-items-center rounded-full bg-gradient-to-br from-primary-light/30 to-primary/10 font-bold text-primary-light">{review.customer_name.slice(0,1)}</div>}
                 <div className="min-w-0 flex-1">
                   <h3 className="truncate font-bold">{review.customer_name}</h3>
                   <div className="mt-1 flex items-center gap-0.5" aria-label={`${review.rating} / 5`}>

@@ -133,7 +133,7 @@ function SeriesAdmin() {
     </div>
     <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {items.map((item, index) => <Card key={item.id} className="overflow-hidden border-slate-200 bg-white text-black">
-        <div className="aspect-square bg-slate-50"><img src={item.image_url || "/placeholder.svg"} alt={item.name_ar} className="h-full w-full object-contain p-5"/></div>
+        <div className="aspect-square bg-slate-50"><img src={item.image_url || "/placeholder.svg"} alt={item.name_ar} className="h-full w-full object-contain p-5" loading="lazy" decoding="async" /></div>
         <CardContent className="p-4">
           <div className="flex items-start justify-between gap-2">
             <div><div className="mb-1 text-[10px] font-black uppercase tracking-wider text-violet-600">ترتيب #{index + 1}</div><h3 className="font-bold">{item.name_ar}</h3><p className="text-xs text-slate-500">{item.name_en}</p></div>

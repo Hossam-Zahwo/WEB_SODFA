@@ -27,6 +27,9 @@ export function ModelFilter({
   const visibleModels = useMemo(() => {
     const filtered = models.filter((m) => {
       if (selectedSeriesId && m.series_id !== selectedSeriesId) return false;
+      // When a series is selected, show every model belonging to that series,
+      // even if the model is not currently attached to any product.
+      if (selectedSeriesId) return true;
       return productModelIds ? productModelIds.has(m.id) : true;
     });
     return filtered;

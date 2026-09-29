@@ -21,7 +21,7 @@ import { suggestFromText } from "@/lib/productAutomation";
 export const Route = createFileRoute("/admin/products")({ component: ProductsAdmin });
 
 const empty = {
-  slug: "", name_ar: "", name_en: "", description_ar: "", description_en: "", color: "",
+  slug: "", name_ar: "", name_en: "", variant_display_name: "", variant_type: "", variant_value: "", description_ar: "", description_en: "", color: "",
   category_id: "", model_id: "", price: "", old_price: "", stock: "0", in_stock: true,
   featured: false, best_seller: false, is_new: false,
 };
@@ -33,6 +33,7 @@ type VariantDraft = {
   variant_name: string;
   variant_type: string;
   variant_value: string;
+  shape: string;
   name_ar: string;
   name_en: string;
   slug: string;
@@ -85,7 +86,7 @@ async function makeUniqueCode(prefix: string, table: "products" | "product_varia
 
 function makeVariant(): VariantDraft {
   return {
-    variant_name: "", variant_type: "color", variant_value: "", name_ar: "", name_en: "", slug: "", description_ar: "", description_en: "", category_id: "", model_id: "", featured: false, best_seller: false, is_new: false, in_stock: true, color: "",
+    variant_name: "", variant_type: "color", variant_value: "", shape: "", name_ar: "", name_en: "", slug: "", description_ar: "", description_en: "", category_id: "", model_id: "", featured: false, best_seller: false, is_new: false, in_stock: true, color: "",
     sku: "", barcode: "", price: "", old_price: "", stock: "0", images: [], existingImages: [], primaryIndex: 0,
   };
 }
@@ -97,6 +98,7 @@ function normalizeVariantType(value: string | null | undefined) {
   if (["size", "مقاس", "المقاس", "حجم"].includes(v)) return "size";
   if (["storage", "سعة", "السعة", "مساحة"].includes(v)) return "storage";
   if (["material", "خامة", "الخامة", "مادة"].includes(v)) return "material";
+  if (["shape", "شكل", "الشكل"].includes(v)) return "shape";
   return "other";
 }
 
@@ -295,7 +297,7 @@ function ProductsAdmin() {
     setGeneratedCodes({ sku: p.sku || "", barcode: p.barcode || "" });
     setEditing(p.id);
     setForm({
-      slug: p.slug, name_ar: p.name_ar, name_en: p.name_en,
+      slug: p.slug, name_ar: p.name_ar, name_en: p.name_en, variant_display_name: (p as any).variant_display_name || "", variant_type: normalizeVariantType((p as any).variant_type), variant_value: (p as any).variant_value || "",
       description_ar: p.description_ar || "", description_en: p.description_en || "", color: (p as any).color || "",
       category_id: p.category_id || "", model_id: p.model_id || "", price: String(p.price),
       old_price: p.old_price == null ? "" : String(p.old_price),
@@ -311,6 +313,7 @@ function ProductsAdmin() {
         variant_name: v.variant_name,
         variant_type: normalizeVariantType(v.variant_type),
         variant_value: v.variant_value || "",
+        shape: (v as any).shape || "",
         name_ar: v.name_ar || "", name_en: v.name_en || "", slug: v.slug || "",
         description_ar: v.description_ar || "", description_en: v.description_en || "",
         category_id: v.category_id || "", model_id: v.model_id || "",
@@ -491,6 +494,9 @@ function ProductsAdmin() {
         slug: generatedSlug,
         name_ar: form.name_ar.trim(),
         name_en: form.name_en.trim(),
+        variant_display_name: form.variant_display_name.trim() || null,
+        variant_type: form.variant_type.trim() || null,
+        variant_value: form.variant_value.trim() || null,
         description_ar: form.description_ar || null,
         description_en: form.description_en || null,
         color: form.color.trim() || null,
@@ -554,9 +560,10 @@ function ProductsAdmin() {
           const oldPrice = enteredOldPrice !== null && enteredOldPrice > finalPrice ? enteredOldPrice : null;
           const vp: any = {
             product_id: productId,
-            variant_name: form.name_ar.trim() || form.name_en.trim() || `Product ${i + 1}`,
+            variant_name: v.variant_name.trim() || v.shape.trim() || v.variant_value.trim() || form.variant_display_name.trim() || form.name_ar.trim() || form.name_en.trim() || `Product ${i + 1}`,
             variant_type: v.variant_type.trim() || "other",
             variant_value: value || null,
+            shape: v.shape.trim() || null,
             name_ar: v.name_ar.trim() || null,
             name_en: v.name_en.trim() || null,
             slug: v.slug.trim() || null,
@@ -680,6 +687,7 @@ function ProductsAdmin() {
         slug: newSlug,
         name_ar: source.name_ar,
         name_en: source.name_en,
+        variant_display_name: source.variant_display_name || null,
         description_ar: source.description_ar || null,
         description_en: source.description_en || null,
         color: source.color || null,
@@ -725,6 +733,7 @@ function ProductsAdmin() {
             variant_name: sourceVariant.variant_name,
             variant_type: sourceVariant.variant_type || "other",
             variant_value: sourceVariant.variant_value || null,
+            shape: sourceVariant.shape || null,
             name_ar: sourceVariant.name_ar || null,
             name_en: sourceVariant.name_en || null,
             slug: sourceVariant.slug || null,
@@ -869,7 +878,7 @@ function ProductsAdmin() {
         if (!drafts.length) {
           const sku = await makeUniqueCode("SODFA-V", "product_variants", "sku");
           const barcode = await makeUniqueCode("623", "product_variants", "barcode");
-          setDrafts([{ ...makeVariant(), variant_name: `${form.name_ar || suggestion.name_en || "Product"} - ${suggestion.variant_value || "Variant"}`, variant_type: normalizeVariantType(suggestion.variant_type), variant_value: suggestion.variant_value || "", color: suggestion.color || "", sku, barcode, price: form.price }]);
+          setDrafts([{ ...makeVariant(), variant_name: suggestion.variant_value || "Variant", variant_type: normalizeVariantType(suggestion.variant_type), variant_value: suggestion.variant_value || "", color: suggestion.color || "", sku, barcode, price: form.price }]);
         }
       }
       setAutomationDone(true);
@@ -973,7 +982,7 @@ function ProductsAdmin() {
                     <div className="text-sm font-black">معاينة سريعة</div>
                     <div className="mt-3 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
                       <div className="grid grid-cols-[72px_1fr] gap-3 p-3">
-                        <div className="h-[72px] overflow-hidden rounded-xl bg-white">{(mainExisting[0]?.image_url || mainUploads[0]?.preview) && <img src={mainExisting[0]?.image_url || mainUploads[0]?.preview} className="h-full w-full object-contain bg-white" />}</div>
+                        <div className="h-[72px] overflow-hidden rounded-xl bg-white">{(mainExisting[0]?.image_url || mainUploads[0]?.preview) && <img src={mainExisting[0]?.image_url || mainUploads[0]?.preview} className="h-full w-full object-contain bg-white" loading="lazy" decoding="async" />}</div>
                         <div className="min-w-0"><div className="line-clamp-2 text-sm font-bold">{form.name_ar || "اسم المنتج"}</div><div className="mt-1 text-xs text-slate-500">{form.name_en || "Product name"}</div><div className="mt-2 font-black text-slate-900">{form.price ? `${form.price} جنيه` : "—"}</div></div>
                       </div>
                     </div>
@@ -984,6 +993,9 @@ function ProductsAdmin() {
                       <div><h3 className="font-black">General</h3><p className="text-xs text-slate-500">البيانات الأساسية للمنتج.</p></div>
                       <Field label="الاسم باللغة العربية *"><Input required value={form.name_ar} placeholder="اسم المنتج بالعربي" onChange={(e) => setForm({ ...form, name_ar: e.target.value })}/></Field>
                       <Field label="English Name *"><Input required value={form.name_en} placeholder="e.g. Premium Phone Case" onChange={(e) => setForm({ ...form, name_en: e.target.value })}/></Field>
+                      <Field label="اسم داخلي للتفريعة (اختياري)"><Input value={form.variant_display_name} placeholder="الاسم الذي يظهر للمنتج الرئيسي داخل مربع اختيار التفريعات" onChange={(e) => setForm({ ...form, variant_display_name: e.target.value })}/></Field>
+                      <Field label="نوع التفريعة"><select value={form.variant_type} onChange={(e) => setForm({ ...form, variant_type: e.target.value })} className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm"><option value="">بدون تفريعة</option><option value="color">اللون</option><option value="model">الموديل</option><option value="size">المقاس</option><option value="storage">السعة</option><option value="material">الخامة</option><option value="shape">الشكل</option><option value="other">اختلاف آخر</option></select></Field>
+                      <Field label="قيمة الاختلاف (اختياري)"><Input value={form.variant_value} placeholder={form.variant_type === "model" ? "مثال: iPhone 17 Pro Max" : form.variant_type === "color" ? "مثال: أسود" : form.variant_type === "shape" ? "مثال: يونيكورن" : "مثال: XL أو 256GB"} onChange={(e) => setForm({ ...form, variant_value: e.target.value })}/></Field>
                       <Field label="لون المنتج"><Input value={form.color} placeholder="مثال: أسود أو #000000" onChange={(e) => setForm({ ...form, color: e.target.value })}/></Field>
                       <div className="grid gap-4 sm:grid-cols-2">
                         <Field label="التصنيف"><select value={form.category_id} onChange={(e) => setForm({ ...form, category_id: e.target.value })} className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm"><option value="">بدون تصنيف</option>{cats.map((c) => <option key={c.id} value={c.id}>{c.name_ar}</option>)}</select></Field>
@@ -1098,7 +1110,7 @@ function ProductsAdmin() {
                     const vs = grouped.get(p.id) || [];
                     return <Fragment key={p.id}>
                       <tr className="border-t border-slate-800 bg-slate-950 hover:bg-slate-900/70">
-                        <td className="p-4"><div className="flex items-center gap-3"><input type="checkbox" aria-label={`تحديد ${p.name_ar}`} checked={selectedIds.has(p.id)} onChange={(e) => setSelectedIds((prev) => { const next = new Set(prev); if (e.target.checked) next.add(p.id); else next.delete(p.id); return next; })} className="h-4 w-4 accent-white"/><div className="h-14 w-14 overflow-hidden rounded-xl bg-slate-900 ring-1 ring-slate-800">{p.thumbnail_url ? <img src={p.thumbnail_url} className="h-full w-full object-contain bg-white" /> : <ImagePlus className="m-4 text-slate-600" size={20}/>}</div><div><div className="font-bold text-white">{p.name_ar}</div><div className="text-xs text-slate-500">{p.name_en}</div></div></div></td>
+                        <td className="p-4"><div className="flex items-center gap-3"><input type="checkbox" aria-label={`تحديد ${p.name_ar}`} checked={selectedIds.has(p.id)} onChange={(e) => setSelectedIds((prev) => { const next = new Set(prev); if (e.target.checked) next.add(p.id); else next.delete(p.id); return next; })} className="h-4 w-4 accent-white"/><div className="h-14 w-14 overflow-hidden rounded-xl bg-slate-900 ring-1 ring-slate-800">{p.thumbnail_url ? <img src={p.thumbnail_url} className="h-full w-full object-contain bg-white" loading="lazy" decoding="async" /> : <ImagePlus className="m-4 text-slate-600" size={20}/>}</div><div><div className="font-bold text-white">{p.name_ar}</div><div className="text-xs text-slate-500">{p.name_en}</div></div></div></td>
                         <td className="p-4 font-mono text-xs text-slate-400">{p.barcode || "—"}</td>
                         <td className="p-4 text-white">{quickEditMode ? (() => { const q = getQuickValues(p.id, p.price, p.stock); return <Input type="number" min="0" step="0.01" value={q.price} onChange={(e) => setQuickValue(p.id, "price", e.target.value)} className="h-9 w-28 border-slate-700 bg-slate-900 text-white"/>; })() : <>{p.price} جنيه</>}</td>
                         <td className="p-4 text-slate-300">{quickEditMode ? (() => { const q = getQuickValues(p.id, p.price, p.stock); return <Input type="number" min="0" step="1" value={q.stock} onChange={(e) => setQuickValue(p.id, "stock", e.target.value)} className="h-9 w-24 border-slate-700 bg-slate-900 text-white"/>; })() : p.stock}</td>
@@ -1108,7 +1120,7 @@ function ProductsAdmin() {
                       {expanded[p.id] && vs.map((v) => {
                         const thumb = variantThumb(v.id);
                         return <tr key={v.id} className="border-t border-slate-900 bg-slate-900/60">
-                          <td className="p-3 pr-10" colSpan={2}><div className="flex items-center gap-3"><div className="h-14 w-14 overflow-hidden rounded-xl bg-slate-950 ring-1 ring-slate-800">{thumb ? <img src={thumb} className="h-full w-full object-contain bg-white"/> : <ImagePlus size={18} className="m-4 text-slate-700"/>}</div><div><div className="font-bold text-white">↳ {v.variant_name}</div><div className="text-xs text-slate-400">{v.variant_type || "Variant"}: {v.variant_value || "—"} {v.color ? `• ${v.color}` : ""}</div><div className="mt-1 font-mono text-[10px] text-slate-600">{v.sku || "—"} • {v.barcode || "—"}</div></div></div></td>
+                          <td className="p-3 pr-10" colSpan={2}><div className="flex items-center gap-3"><div className="h-14 w-14 overflow-hidden rounded-xl bg-slate-950 ring-1 ring-slate-800">{thumb ? <img src={thumb} className="h-full w-full object-contain bg-white" loading="lazy" decoding="async" /> : <ImagePlus size={18} className="m-4 text-slate-700"/>}</div><div><div className="font-bold text-white">↳ {v.variant_name}</div><div className="text-xs text-slate-400">{v.variant_type || "Variant"}: {v.variant_value || "—"} {v.color ? `• ${v.color}` : ""}</div><div className="mt-1 font-mono text-[10px] text-slate-600">{v.sku || "—"} • {v.barcode || "—"}</div></div></div></td>
                           <td className="p-3 text-white">{quickEditMode ? (() => { const q = getQuickValues(v.id, v.price ?? p.price, v.stock ?? 0); return <Input type="number" min="0" step="0.01" value={q.price} onChange={(e) => setQuickValue(v.id, "price", e.target.value)} className="h-9 w-28 border-slate-700 bg-slate-950 text-white"/>; })() : <>{v.price ?? p.price} جنيه{v.old_price != null && Number(v.old_price) > Number(v.price ?? p.price) ? <span className="ms-2 text-xs text-slate-500 line-through">{v.old_price} جنيه</span> : null}</>}</td>
                           <td className="p-3 text-slate-300">{quickEditMode ? (() => { const q = getQuickValues(v.id, v.price ?? p.price, v.stock ?? 0); return <Input type="number" min="0" step="1" value={q.stock} onChange={(e) => setQuickValue(v.id, "stock", e.target.value)} className="h-9 w-24 border-slate-700 bg-slate-950 text-white"/>; })() : (v.stock ?? 0)}</td><td className="p-3 text-xs text-slate-500">{images.filter((i) => i.variant_id === v.id).length} صور</td>
                           <td className="p-3"><div className="flex gap-2"><Button size="sm" variant="outline" className="border-slate-700 bg-transparent text-white" onClick={() => openEdit(p)}><Pencil size={15}/></Button><Button size="sm" variant="destructive" onClick={() => void removeVariant(v)}><Trash2 size={15}/></Button></div></td>
@@ -1166,7 +1178,7 @@ function ImageTile(props: {
   onUp?: () => void; onDown?: () => void;
 }) {
   return <div draggable={props.draggable} onDragStart={props.onDragStart} onDragOver={props.onDragOver} onDrop={props.onDrop} className="group relative overflow-hidden rounded-xl border border-slate-200 bg-white">
-    <img src={props.src} className="aspect-square w-full object-contain bg-white p-1" alt="" />
+    <img src={props.src} className="aspect-square w-full object-contain bg-white p-1" alt="" loading="lazy" decoding="async" />
     <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-1 bg-black/60 p-1.5 text-white">
       <button type="button" title="تعيين كرئيسية" onClick={props.onPrimary} className={`rounded-md px-1.5 py-1 text-[10px] ${props.primary ? "bg-white text-slate-900" : "bg-black/30"}`}>{props.primary ? <Star size={11} className="inline fill-current"/> : "رئيسية"}</button>
       <div className="flex gap-0.5"><button type="button" title="أعلى" onClick={props.onUp} className="rounded p-1 hover:bg-white/20"><ArrowUp size={11}/></button><button type="button" title="أسفل" onClick={props.onDown} className="rounded p-1 hover:bg-white/20"><ArrowDown size={11}/></button><button type="button" title="حذف" onClick={props.onRemove} className="rounded p-1 hover:bg-red-500/50"><X size={12}/></button></div>
@@ -1192,9 +1204,10 @@ function VariantEditor(props: {
   return <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
     <div className="flex items-start justify-between gap-3"><div><div className="font-black">Variant {props.index + 1}</div><div className="text-xs text-slate-500">مثل: أسود / iPhone 15 Pro / 256GB</div></div><Button type="button" size="sm" variant="destructive" onClick={props.onRemove}><Trash2 size={14}/></Button></div>
     <div className="mt-4 grid gap-3 sm:grid-cols-2">
-      <div className="rounded-lg border border-blue-100 bg-blue-50 p-3 text-xs text-blue-800"><strong>اسم التفريعة:</strong> اكتب قيمة الاختلاف الخاصة بهذه التفريعة. ستظهر للعميل بدل تكرار اسم المنتج، مثل: 17 Pro Max أو أسود.</div>
-      <Field label="نوع التفريعة"><select value={v.variant_type} onChange={(e) => props.onChange(props.index, { variant_type: e.target.value })} className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm"><option value="color">اللون</option><option value="model">الموديل</option><option value="size">المقاس</option><option value="storage">السعة</option><option value="material">الخامة</option><option value="other">اختلاف آخر</option></select></Field>
-      <Field label={v.variant_type === "model" ? "اسم الموديل / التفريعة" : v.variant_type === "color" ? "اسم اللون / التفريعة" : "قيمة الاختلاف / اسم التفريعة"}><Input required value={v.variant_value} placeholder={v.variant_type === "model" ? "مثال: iPhone 17 Pro Max" : v.variant_type === "color" ? "مثال: أسود" : "مثال: XL أو 256GB"} onChange={(e) => props.onChange(props.index, { variant_value: e.target.value })}/></Field>
+      <Field label="الشكل"><Input required value={v.shape} placeholder="مثال: شفاف / مطفي / لامع" onChange={(e) => props.onChange(props.index, { shape: e.target.value })}/></Field>
+      <Field label="نوع التفريعة"><select value={v.variant_type} onChange={(e) => props.onChange(props.index, { variant_type: e.target.value })} className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm"><option value="color">اللون</option><option value="model">الموديل</option><option value="size">المقاس</option><option value="storage">السعة</option><option value="material">الخامة</option><option value="shape">الشكل</option><option value="other">اختلاف آخر</option></select></Field>
+      <Field label="اسم داخلي للتفريعة"><Input value={v.variant_name} placeholder="اسم للتعرف على التفريعة داخل لوحة التحكم" onChange={(e) => props.onChange(props.index, { variant_name: e.target.value })}/></Field>
+      <Field label="قيمة الاختلاف الظاهرة في مربع الاختيار (اختياري)"><Input value={v.variant_value} placeholder={v.variant_type === "model" ? "مثال: iPhone 17 Pro Max" : v.variant_type === "color" ? "مثال: أسود وورد" : "مثال: XL أو 256GB"} onChange={(e) => props.onChange(props.index, { variant_value: e.target.value })}/></Field>
       <Field label="الاسم العربي الخاص بالتفريعة"><Input value={v.name_ar} placeholder="فارغ = يرث اسم المنتج الرئيسي" onChange={(e) => props.onChange(props.index, { name_ar: e.target.value })}/></Field>
       <Field label="Variant English Name"><Input value={v.name_en} placeholder="Blank = inherit main product name" onChange={(e) => props.onChange(props.index, { name_en: e.target.value })}/></Field>
       <Field label="Slug خاص بالتفريعة"><Input value={v.slug} placeholder="اختياري، يُستخدم اسم المنتج إن تُرك فارغًا" onChange={(e) => props.onChange(props.index, { slug: slugify(e.target.value) })}/></Field>

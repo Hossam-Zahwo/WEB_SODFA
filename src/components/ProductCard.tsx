@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { Plus, Check, Layers3, Star } from "lucide-react";
+import { Plus, Check, Star } from "lucide-react";
 import { SmartImage } from "./SmartImage";
 import { useLang } from "@/lib/i18n";
 import { useCart } from "@/lib/cart";
@@ -58,17 +58,15 @@ export function ProductCard({
   imageRatio?: "square" | "wide" | "portrait";
   imageFit?: "cover" | "contain";
 }) {
-  const { t, pick, price, lang } = useLang();
+  const { t, pick, price } = useLang();
   const { add } = useCart();
   const [added, setAdded] = useState(false);
   const displayPrice = variant?.price ?? product.price;
   const displayOldPrice = variant?.oldPrice ?? product.oldPrice;
   const displayImage = variant?.primaryImage ?? product.images[0];
-  const displayName = variant
-    ? pick(variant.nameAr || variant.value || product.name.ar, variant.nameEn || variant.value || product.name.en)
-    : pick(product.name.ar, product.name.en);
-  const variantTypeLabels: Record<string, { ar: string; en: string }> = { color: { ar: "اللون", en: "Color" }, model: { ar: "الموديل", en: "Model" }, size: { ar: "المقاس", en: "Size" }, storage: { ar: "السعة", en: "Storage" }, material: { ar: "الخامة", en: "Material" }, other: { ar: "الاختيار", en: "Option" } };
-  const variantLabel = variant ? `${variantTypeLabels[variant.type || "other"]?.[lang] || variant.type}: ${variant.value || variant.name}` : "";
+  // Product cards always keep the parent product title. The variant's
+  // difference value is shown separately beneath it.
+  const displayName = pick(product.name.ar, product.name.en);
   const off = discountPct(displayPrice, displayOldPrice);
   const variantColor = variant?.color ?? (variant?.type === "color" ? variant.value : undefined);
 
@@ -121,17 +119,16 @@ export function ProductCard({
             <span className="rounded-full bg-primary-dark/90 px-2.5 py-1 text-[10px] font-extrabold text-white shadow-sm">{t("product.new")}</span>
           )}
         </div>
-        {variant && (
-          <span className="absolute end-3 top-3 flex max-w-[52%] items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[10px] font-semibold text-foreground shadow-sm backdrop-blur">
-            <Layers3 size={11} /> <span className="truncate">{variantLabel}</span>
-          </span>
-        )}
       </div>
 
       <div className="flex flex-1 flex-col gap-3 p-4">
         <div>
           <div className="line-clamp-2 text-sm font-medium sm:text-base">{displayName}</div>
-          {variant && <div className="mt-1 line-clamp-1 text-[11px] text-subtle">{variantLabel}</div>}
+          {variant && (variant.value || variant.shape || variant.name) && (
+            <div className="mt-1 line-clamp-1 text-[11px] text-subtle" title={variant.value || variant.shape || variant.name}>
+              {variant.value || variant.shape || variant.name}
+            </div>
+          )}
         </div>
 
         <Rating average={product.ratingAverage} count={product.ratingCount} />

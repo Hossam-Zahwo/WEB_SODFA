@@ -10,7 +10,7 @@ import { FindYourPhone } from "@/components/FindYourPhone";
 import { HomeProductShowcase } from "@/components/HomeProductShowcase";
 import { CustomerReviews } from "@/components/CustomerReviews";
 import { useLang } from "@/lib/i18n";
-import { listModels, listSeries, listStoreProducts, type DbModel, type DbSeries, type StoreProduct } from "@/lib/db";
+import { listModels, listSeries, listStoreProductsPage, type DbModel, type DbSeries, type StoreProduct } from "@/lib/db";
 import { DeviceFilter } from "@/components/DeviceFilter";
 
 export const Route = createFileRoute("/")({
@@ -41,8 +41,20 @@ function Index() {
 
   useEffect(() => {
     let alive = true;
-    Promise.all([listStoreProducts(), listModels(), listSeries()])
-      .then(([data, modelData, seriesData]) => { if (alive) { setProducts(data); setModels(modelData); setSeries(seriesData); } })
+    Promise.all([
+      listStoreProductsPage({ page: 0, pageSize: 8, featured: true }),
+      listStoreProductsPage({ page: 0, pageSize: 8, newest: true }),
+      listModels(),
+      listSeries(),
+    ])
+      .then(([bestPage, newPage, modelData, seriesData]) => {
+        if (alive) {
+          const merged = [...bestPage.products, ...newPage.products].filter((product, index, all) => all.findIndex((item) => item.id === product.id) === index);
+          setProducts(merged);
+          setModels(modelData);
+          setSeries(seriesData);
+        }
+      })
       .catch((error) => console.error("Home products failed:", error))
       .finally(() => { if (alive) setProductsLoading(false); });
     return () => { alive = false; };

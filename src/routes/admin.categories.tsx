@@ -23,6 +23,7 @@ function CategoriesAdmin() {
   const [editing, setEditing] = useState<string | null>(null);
   const [show, setShow] = useState(false);
   const [error, setError] = useState("");
+  const [warning, setWarning] = useState("");
   const [saving, setSaving] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -45,49 +46,85 @@ function CategoriesAdmin() {
   };
 
   const uploadImage = async (categoryId: string, file: File) => {
-    const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+    const rawExt = file.name.split(".").pop()?.toLowerCase() || "jpg";
+    const ext = /^[a-z0-9]+$/.test(rawExt) ? rawExt : "jpg";
     const path = `${categoryId}/${crypto.randomUUID()}.${ext}`;
-    const { error: uploadError } = await supabase.storage.from(CATEGORY_BUCKET).upload(path, file, { upsert: false, cacheControl: "31536000" });
+    const { error: uploadError } = await supabase.storage.from(CATEGORY_BUCKET).upload(path, file, {
+      upsert: false,
+      contentType: file.type || "image/jpeg",
+      cacheControl: "31536000",
+    });
     if (uploadError) throw uploadError;
-    const { data } = supabase.storage.from(CATEGORY_BUCKET).getPublicUrl(path);
-    return data.publicUrl;
+    return { path, url: supabase.storage.from(CATEGORY_BUCKET).getPublicUrl(path).data.publicUrl };
+  };
+
+  const errorText = (value: unknown) => {
+    if (value && typeof value === "object") {
+      const err = value as { message?: string; details?: string; hint?: string; code?: string };
+      return [err.message, err.details, err.hint, err.code ? `(${err.code})` : ""].filter(Boolean).join(" — ");
+    }
+    return String(value || "حدث خطأ غير معروف");
   };
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true); setError("");
+    if (saving) return;
+    setSaving(true);
+    setError("");
+    setWarning("");
+
+    let uploadedPath: string | null = null;
     try {
       const slug = slugify(form.slug || form.name_en);
       if (!slug) throw new Error("اكتب الاسم الإنجليزي أو الـ Slug أولًا.");
       if (!form.name_ar.trim() || !form.name_en.trim()) throw new Error("الاسم العربي والإنجليزي مطلوبان.");
 
-      const basePayload = { slug, name_ar: form.name_ar.trim(), name_en: form.name_en.trim(), keywords: form.keywords };
-      let categoryId = editing;
+      // Generate the ID locally so the save does not depend on a SELECT policy.
+      const categoryId = editing || crypto.randomUUID();
+      let imageUrl = form.image_url && !imageFile ? form.image_url : null;
 
-      if (editing) {
-        const result = await supabase.from("categories").update(basePayload).eq("id", editing).select("id").single();
-        if (result.error) throw result.error;
-        categoryId = result.data.id;
-      } else {
-        const result = await supabase.from("categories").insert(basePayload).select("id").single();
-        if (result.error) throw result.error;
-        categoryId = result.data.id;
+      // Upload first, then save the row with its final URL. If the DB write fails,
+      // remove the newly uploaded object to avoid orphaned files.
+      if (imageFile) {
+        const uploaded = await uploadImage(categoryId, imageFile);
+        uploadedPath = uploaded.path;
+        imageUrl = uploaded.url;
       }
 
-      if (imageFile && categoryId) {
-        const publicUrl = await uploadImage(categoryId, imageFile);
-        const imageResult = await supabase.from("categories").update({ image_url: publicUrl }).eq("id", categoryId);
-        if (imageResult.error) throw imageResult.error;
-      }
+      const payload = {
+        slug,
+        name_ar: form.name_ar.trim(),
+        name_en: form.name_en.trim(),
+        keywords: form.keywords,
+        image_url: imageUrl,
+      };
 
+      const result = editing
+        ? await supabase.from("categories").update(payload).eq("id", categoryId)
+        : await supabase.from("categories").insert({ id: categoryId, ...payload });
+
+      if (result.error) throw result.error;
+
+      // Clear local form state only after the database confirms the save.
       setShow(false);
       setEditing(null);
       setImageFile(null);
       setForm({ slug: "", name_ar: "", name_en: "", image_url: "", keywords: [] });
-      await load();
+      if (fileRef.current) fileRef.current.value = "";
+      try {
+        await load();
+      } catch {
+        setWarning("تم حفظ القسم، لكن تعذر تحديث القائمة. أعد تحميل الصفحة.");
+      }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "حدث خطأ أثناء حفظ القسم");
-    } finally { setSaving(false); }
+      if (uploadedPath) {
+        const { error: cleanupError } = await supabase.storage.from(CATEGORY_BUCKET).remove([uploadedPath]);
+        if (cleanupError) console.error("Category image cleanup failed:", cleanupError);
+      }
+      setError(`تعذر حفظ القسم: ${errorText(e)}`);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const remove = async (id: string) => {
@@ -109,6 +146,7 @@ function CategoriesAdmin() {
   return <AdminGuard><AdminPage>
     <div className="mb-6 flex items-center justify-between gap-3"><div><h1 className="text-3xl font-extrabold">التصنيفات</h1><p className="text-slate-500">أضف اسم القسم بالعربي والإنجليزي وصورة تظهر مباشرة في واجهة المتجر.</p></div><Button onClick={openNew}><Plus size={17}/>إضافة تصنيف</Button></div>
     {error && <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-red-700">{error}</div>}
+    {warning && <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-amber-800">{warning}</div>}
 
     {show && <Card className="mb-6 border-border bg-card shadow-sm"><CardContent className="p-6"><form onSubmit={save} className="grid gap-5 md:grid-cols-2">
       <Field label="الاسم بالعربي"><Input required value={form.name_ar} onChange={e => setForm({ ...form, name_ar: e.target.value })}/></Field>
@@ -136,7 +174,7 @@ function CategoriesAdmin() {
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => chooseImage(e.target.files?.[0])}/>
           {form.image_url ? (
             <>
-              <img src={form.image_url} alt="" className="h-44 w-full object-contain p-3" />
+              <img src={form.image_url} alt="" className="h-44 w-full object-contain p-3" loading="lazy" decoding="async" />
               <button type="button" onClick={(e) => { e.stopPropagation(); clearImage(); }} className="absolute end-3 top-3 grid h-9 w-9 place-items-center rounded-full bg-white/95 text-slate-700 shadow-md"><X size={16}/></button>
             </>
           ) : (
@@ -149,7 +187,7 @@ function CategoriesAdmin() {
     </form></CardContent></Card>}
 
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{items.map(c => <Card key={c.id} className="overflow-hidden border-border bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md"><CardContent className="p-0">
-      <div className="relative h-36 overflow-hidden bg-muted/40"><img src={c.image_url || "/placeholder.svg"} alt={c.name_en} className="h-full w-full object-contain p-3 transition-transform duration-500 hover:-translate-y-1" /></div>
+      <div className="relative h-36 overflow-hidden bg-muted/40"><img src={c.image_url || "/placeholder.svg"} alt={c.name_en} className="h-full w-full object-contain p-3 transition-transform duration-500 hover:-translate-y-1" loading="lazy" decoding="async" /></div>
       <div className="flex items-center gap-3 p-4"><div className="min-w-0 flex-1"><h3 className="truncate font-bold">{c.name_ar}</h3><p className="truncate text-sm text-muted-foreground">{c.name_en} · /category/{c.slug}</p></div><Button type="button" variant="outline" onClick={() => openEdit(c)}><Pencil size={16}/></Button><Button type="button" variant="destructive" onClick={() => remove(c.id)}><Trash2 size={16}/></Button></div>
     </CardContent></Card>)}</div>
   </AdminPage></AdminGuard>;

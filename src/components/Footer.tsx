@@ -14,8 +14,7 @@ export function Footer() {
               <img
                 src="/Asset 3.png"
                 alt="SODFA صدفة"
-                className="h-10 w-auto object-contain"
-              />
+                className="h-10 w-auto object-contain" loading="lazy" decoding="async" />
             </Link>
 
             <p className="mt-4 text-sm text-white/80">

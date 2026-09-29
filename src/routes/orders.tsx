@@ -101,7 +101,7 @@ function MyOrdersPage() {
                 <div className="mt-5 divide-y divide-border rounded-2xl border border-border">
                   {order.items.map((item) => (
                     <div key={item.id} className="flex gap-3 p-4">
-                      {item.image_url ? <img src={item.image_url} alt="" className="h-16 w-16 rounded-xl bg-white object-contain" /> : <div className="grid h-16 w-16 place-items-center rounded-xl bg-background"><Package size={20} className="text-subtle" /></div>}
+                      {item.image_url ? <img src={item.image_url} alt="" className="h-16 w-16 rounded-xl bg-white object-contain" loading="lazy" decoding="async" /> : <div className="grid h-16 w-16 place-items-center rounded-xl bg-background"><Package size={20} className="text-subtle" /></div>}
                       <div className="min-w-0 flex-1">
                         <p className="font-bold">{item.product_name}</p>
                         {item.variant_name && <p className="mt-1 text-xs text-primary-light">{item.variant_name}</p>}

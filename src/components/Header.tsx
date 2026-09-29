@@ -126,8 +126,7 @@ export function Header() {
           <img
             src="/Asset%202.png"
             alt="SODFA صدفة"
-            className="h-9 w-auto object-contain sm:h-10"
-          />
+            className="h-9 w-auto object-contain sm:h-10" loading="lazy" decoding="async" />
         </Link>
 
         {/* =========================

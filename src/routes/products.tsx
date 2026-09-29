@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ProductGrid } from "@/components/ProductCard";
 import { DeviceFilter } from "@/components/DeviceFilter";
 import { useLang } from "@/lib/i18n";
-import { listCategories, listModels, listSeries, listStoreProducts, type DbCategory, type DbModel, type DbSeries, type StoreProduct } from "@/lib/db";
+import { listCategories, listModels, listSeries, listStoreProductsPage, type DbCategory, type DbModel, type DbSeries, type StoreProduct } from "@/lib/db";
 
 type Search = { q?: string; cat?: string; model?: string; series?: string };
 
@@ -34,6 +34,9 @@ function ProductsPage() {
   const [selectedModel, setSelectedModel] = useState<string | undefined>(modelParam);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
     setSelectedModel(modelParam);
@@ -49,10 +52,12 @@ function ProductsPage() {
 
   useEffect(() => {
     let alive = true;
-    Promise.all([listStoreProducts(), listCategories(), listModels(), listSeries()])
-      .then(([nextProducts, nextCategories, nextModels, nextSeries]) => {
+    Promise.all([listStoreProductsPage({ page: 0, pageSize: 16 }), listCategories(), listModels(), listSeries()])
+      .then(([result, nextCategories, nextModels, nextSeries]) => {
         if (!alive) return;
-        setProducts(nextProducts);
+        setProducts(result.products);
+        setHasMore(result.hasMore);
+        setPage(0);
         setCategories(nextCategories);
         setModels(nextModels);
         setSeries(nextSeries);
@@ -61,6 +66,21 @@ function ProductsPage() {
       .finally(() => alive && setLoading(false));
     return () => { alive = false; };
   }, []);
+
+  const loadMore = async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    try {
+      const result = await listStoreProductsPage({ page: page + 1, pageSize: 16 });
+      setProducts((current) => [...current, ...result.products]);
+      setPage(result.page);
+      setHasMore(result.hasMore);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("shop.loadError"));
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const selectedCategoryId = useMemo(
     () => categories.find((item) => item.slug === cat)?.id,
@@ -123,7 +143,16 @@ function ProductsPage() {
         {selectedSeries && !selectedModel ? (
           <p className="py-16 text-center text-sm text-subtle">{t("filter.chooseModel")}</p>
         ) : list.length ? (
-          <ProductGrid products={list} selectedModelId={selectedModel} />
+          <>
+            <ProductGrid products={list} selectedModelId={selectedModel} />
+            {hasMore && (
+              <div className="mt-8 flex justify-center">
+                <button type="button" onClick={() => void loadMore()} disabled={loadingMore} className="rounded-full border border-border px-6 py-3 text-sm font-semibold transition hover:border-primary/40 disabled:opacity-50">
+                  {loadingMore ? "جارٍ تحميل المزيد..." : "تحميل المزيد"}
+                </button>
+              </div>
+            )}
+          </>
         ) : (
           <p className="py-16 text-center text-sm text-subtle">{t("shop.noFilterResults")}</p>
         )}

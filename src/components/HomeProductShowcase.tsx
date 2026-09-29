@@ -128,7 +128,7 @@ export function HomeProductImageSlider({ products }: { products: StoreProduct[] 
       ...p.images.map((src) => ({ src, name: pick(p.name.ar, p.name.en) })),
       ...p.variants.flatMap((variant) => variant.images.map((src) => ({
         src,
-        name: pick(variant.nameAr || variant.value || p.name.ar, variant.nameEn || variant.value || p.name.en),
+        name: variant.name || pick(variant.nameAr || variant.value || p.name.ar, variant.nameEn || variant.value || p.name.en),
       }))),
     ]);
     return urls.filter((x, i, a) => a.findIndex((y) => y.src === x.src) === i);

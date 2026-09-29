@@ -162,6 +162,8 @@ export function HeroSlider() {
             src={s.image}
             alt=""
             aria-hidden={i !== index}
+            loading={i === index ? "eager" : "lazy"}
+            decoding="async"
             className={cn(
               "absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-[1000ms] ease-out",
               i === index
@@ -284,15 +286,17 @@ export function HeroSlider() {
       </div>
 
       {/* Mobile: نفس تكوين Hero الديسكتوب داخل السلايدر نفسه، مع مقاسات متجاوبة */}
-      <div className="lg:hidden relative mx-auto w-full aspect-[1/1.05] min-h-[430px] overflow-hidden bg-white">
+      <div className="lg:hidden relative mx-auto w-full aspect-[1667/943] overflow-hidden bg-white">
         {slides.map((s, i) => (
           <img
             key={`mobile-image-${s.to}`}
             src={s.image}
             alt=""
             aria-hidden={i !== index}
+            loading={i === index ? "eager" : "lazy"}
+            decoding="async"
             className={cn(
-              "absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-[1000ms] ease-out",
+              "absolute inset-0 h-full w-full object-contain object-center transition-opacity duration-[1000ms] ease-out",
               i === index ? "opacity-100" : "pointer-events-none opacity-0",
             )}
           />
