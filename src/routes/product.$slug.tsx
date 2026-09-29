@@ -165,7 +165,7 @@ function ProductPage() {
 
             {product.variants.length > 0 && (
               <div className="mt-7">
-                <div className="flex items-center justify-between"><span className="text-xs tracking-widest text-subtle uppercase">{t("product.variants")}</span><span className="text-[11px] text-subtle">{product.variants.length} {t("product.variantCount")}</span></div>
+                <div className="flex items-center justify-between"><span className="text-xs tracking-widest text-subtle uppercase">{t("product.variants")}</span><span className="text-[11px] text-subtle">{product.variants.length + 1} {t("product.variantCount")}</span></div>
                 <div className="mt-3 grid gap-2 sm:grid-cols-2">
                   <button type="button" onClick={() => setSelectedVariantId(undefined)} className={cn("flex items-center gap-3 rounded-xl border p-3 text-start", !selectedVariant ? "border-primary bg-primary/10" : "border-border")}>
                     <SmartImage src={product.images[0] || "/placeholder.svg"} alt={pick(product.name.ar, product.name.en)} className="h-12 w-12 shrink-0 rounded-lg" ratio="square" imgClassName="object-contain bg-white p-1"/><span className="min-w-0"><span className="block truncate text-sm font-semibold">{product.variantDisplayName ? pick(product.variantDisplayName.ar, product.variantDisplayName.en) : product.variantValue || baseModelName}</span><span className="block truncate text-xs text-subtle">{product.variantType ? (variantTypeLabels[product.variantType]?.[lang] || t("product.model")) : t("product.model")}</span>{product.inStock && <span className="text-xs text-subtle">{price(product.price)}</span>}</span>

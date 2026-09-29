@@ -256,7 +256,7 @@ export async function listProductVariants(productIds?: string[]) {
     id: v.id,
     product_id: v.product_id,
     variant_name: v.variant_name || v.variant_value || v.color || "Variant",
-    variant_type: v.variant_type ?? (v.color ? "color" : "variant"),
+    variant_type: normalizeStoreVariantType(v.variant_type) ?? (v.color ? "color" : "variant"),
     variant_value: v.variant_value ?? v.color ?? null,
     shape: v.shape ?? null,
     barcode: v.barcode ?? null,
@@ -317,6 +317,17 @@ const colorPalette: StoreColor[] = [
   { name: { ar: "أحمر", en: "Red" }, hex: "#EF4444" },
   { name: { ar: "وردي", en: "Pink" }, hex: "#EC4899" },
 ];
+
+function normalizeStoreVariantType(value: string | null | undefined) {
+  const v = (value || "").trim().toLowerCase();
+  if (["color", "لون", "اللون"].includes(v)) return "color";
+  if (["model", "موديل", "الموديل", "جهاز"].includes(v)) return "model";
+  if (["size", "مقاس", "المقاس", "حجم"].includes(v)) return "size";
+  if (["storage", "سعة", "السعة", "مساحة"].includes(v)) return "storage";
+  if (["material", "خامة", "الخامة", "مادة"].includes(v)) return "material";
+  if (["shape", "شكل", "الشكل"].includes(v)) return "shape";
+  return value || null;
+}
 
 function makeColors(variants: DbProductVariant[]): StoreColor[] {
   const values = variants.map((v) => v.color || (v.variant_type === "color" ? v.variant_value : null)).filter(Boolean) as string[];
@@ -418,7 +429,7 @@ function toStoreProduct(
     barcode: product.barcode,
     name: { ar: product.name_ar, en: product.name_en },
     variantDisplayName: product.variant_display_name ? { ar: product.variant_display_name, en: product.variant_display_name } : undefined,
-    variantType: product.variant_type ?? undefined,
+    variantType: normalizeStoreVariantType(product.variant_type) ?? undefined,
     variantValue: product.variant_value ?? undefined,
     description: {
       ar: product.description_ar ?? "",

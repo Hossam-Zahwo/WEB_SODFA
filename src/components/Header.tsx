@@ -5,6 +5,7 @@ import { ClipboardList, Menu, Search, ShoppingBag, X } from "lucide-react";
 import { useLang } from "@/lib/i18n";
 import { useCart } from "@/lib/cart";
 import { listCategories, type DbCategory } from "@/lib/db";
+import { loadHeroConfig } from "@/lib/heroConfig";
 import { cn } from "@/lib/utils";
 
 function LangSwitch({ className }: { className?: string }) {
@@ -56,6 +57,8 @@ export function Header() {
   const [q, setQ] = useState("");
   const [categories, setCategories] = useState<DbCategory[]>([]);
   const [hasCustomer, setHasCustomer] = useState(false);
+  const [heroActive, setHeroActive] = useState(false);
+  const [heroLogos, setHeroLogos] = useState({ heroLogo: "/Asset%202.png", scrolledLogo: "/Asset%202.png" });
 
   const pathname = useRouterState({
     select: (s) => s.location.pathname,
@@ -64,6 +67,51 @@ export function Header() {
   useEffect(() => {
     setMenuOpen(false);
     setSearchOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (pathname !== "/") {
+      setHeroActive(false);
+      return;
+    }
+
+    if (window.innerWidth >= 768) {
+      setHeroActive(false);
+    }
+
+    let alive = true;
+    void loadHeroConfig().then((saved) => {
+      if (alive && saved?.mobileHeader) {
+        setHeroLogos({
+          heroLogo: saved.mobileHeader.heroLogo || "/Asset%202.png",
+          scrolledLogo: saved.mobileHeader.scrolledLogo || "/Asset%202.png",
+        });
+      }
+    });
+
+    const updateHeroState = () => {
+      if (window.innerWidth >= 768) {
+        setHeroActive(false);
+        return;
+      }
+      const hero = document.getElementById("sodfa-hero");
+      if (!hero) {
+        setHeroActive(window.scrollY < 24);
+        return;
+      }
+      const headerHeight = 64;
+      const rect = hero.getBoundingClientRect();
+      setHeroActive(rect.top <= headerHeight && rect.bottom > headerHeight + 8);
+    };
+
+    updateHeroState();
+    window.addEventListener("scroll", updateHeroState, { passive: true });
+    window.addEventListener("resize", updateHeroState);
+    return () => {
+      alive = false;
+      window.removeEventListener("scroll", updateHeroState);
+      window.removeEventListener("resize", updateHeroState);
+    };
   }, [pathname]);
 
   useEffect(() => {
@@ -110,7 +158,17 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-background/90 backdrop-blur-xl">
+    <header
+      className={cn(
+        "z-50 border-b border-border backdrop-blur-xl transition-[background-color,box-shadow,border-color,backdrop-filter] duration-500 ease-out",
+        pathname === "/"
+          ? "fixed inset-x-0 top-0 md:sticky md:top-0"
+          : "sticky top-0",
+        pathname === "/" && heroActive
+          ? "border-transparent bg-transparent shadow-none md:border-transparent md:bg-white/10 md:shadow-none"
+          : "border-border/70 bg-white shadow-[0_8px_30px_rgba(57,31,91,.07)] md:bg-white/80",
+      )}
+    >
       {/* =========================
           MAIN HEADER
       ========================== */}
@@ -124,9 +182,12 @@ export function Header() {
           aria-label="SODFA"
         >
           <img
-            src="/Asset%202.png"
+            src={pathname === "/" && heroActive ? heroLogos.heroLogo : heroLogos.scrolledLogo}
             alt="SODFA صدفة"
-            className="h-9 w-auto object-contain sm:h-10" loading="lazy" decoding="async" />
+            className="h-9 w-auto object-contain sm:h-10"
+            loading="eager"
+            decoding="async"
+          />
         </Link>
 
         {/* =========================
@@ -270,7 +331,8 @@ export function Header() {
             type="button"
             aria-label={t("nav.search")}
             onClick={() => setSearchOpen((v) => !v)}
-            className="
+            className={cn(
+              `
               grid
               h-10
               w-10
@@ -281,7 +343,9 @@ export function Header() {
               duration-200
               hover:bg-card
               hover:text-foreground
-            "
+            `,
+              pathname === "/" && heroActive ? "bg-white/15 text-[#30205f]" : "bg-transparent",
+            )}
           >
             <Search className="h-5 w-5" />
           </button>

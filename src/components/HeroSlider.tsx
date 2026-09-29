@@ -5,7 +5,7 @@ import hero1 from "@/assets/hero-1.jpg";
 import hero2 from "@/assets/hero-2.jpg";
 import hero3 from "@/assets/hero-3.jpg";
 import { useLang } from "@/lib/i18n";
-import { loadHeroConfig, type HeroBenefitConfig, type HeroConfig, type HeroSlideConfig } from "@/lib/heroConfig";
+import { defaultHeroMobileBenefitConfig, defaultHeroMobileConfig, loadHeroConfig, type HeroBenefitConfig, type HeroConfig, type HeroSlideConfig } from "@/lib/heroConfig";
 import { cn } from "@/lib/utils";
 
 const iconMap = {
@@ -26,10 +26,11 @@ function fallbackConfig(): HeroConfig {
   return {
     version: 1,
     duration: 6500,
+    mobileHeader: { heroLogo: "/Asset%202.png", scrolledLogo: "/Asset%202.png" },
     slides: [
-      { id: "slide-1", enabled: true, image: hero1, label: { ar: "جراب يكمّل ستايلك", en: "A case that completes your style" }, title: { ar: "حماية شيك… تليق بموبايلك", en: "Smart protection, made for your phone" }, description: { ar: "جرابات مختارة بعناية، تجمع بين الشكل الحلو والحماية اللي تقدر تعتمد عليها كل يوم.", en: "Carefully selected cases that bring together a clean look and protection you can count on every day." }, cta: { ar: "شوف الجرابات", en: "Shop Cases" }, cta2: { ar: "عرض كل المنتجات", en: "View all products" }, link: "cases", contentPosition: "top", textAlign: "center", overlay: 0, benefits: defaultBenefits.map((b) => ({ ...b })) },
-      { id: "slide-2", enabled: true, image: hero2, label: { ar: "اشحن وكمّل يومك", en: "Charge and keep going" }, title: { ar: "شحن سريع… من غير ما يعطّل يومك", en: "Fast charging, without slowing you down" }, description: { ar: "شواحن وكابلات عملية لكل مشاويرك، عشان تفضل جاهز من أول اليوم لآخره.", en: "Practical chargers and cables for every part of your day, so you stay ready from morning to night." }, cta: { ar: "شوف الشواحن", en: "Shop Chargers" }, cta2: { ar: "عرض كل المنتجات", en: "View all products" }, link: "chargers", contentPosition: "top", textAlign: "center", overlay: 0, benefits: defaultBenefits.map((b) => ({ ...b })) },
-      { id: "slide-3", enabled: true, image: hero3, label: { ar: "الشحن على السريع", en: "Wireless, made easy" }, title: { ar: "حط موبايلك… وسيب الباقي علينا", en: "Drop your phone. Let charging do the rest." }, description: { ar: "شحن لاسلكي عملي يخلي مكانك أرتب وروتينك أسهل، من غير كابلات متشابكة.", en: "Practical wireless charging that keeps your setup cleaner and your routine easier, without tangled cables." }, cta: { ar: "شوف الشحن اللاسلكي", en: "Shop Wireless" }, cta2: { ar: "عرض كل المنتجات", en: "View all products" }, link: "wireless-charging", contentPosition: "top", textAlign: "center", overlay: 0, benefits: defaultBenefits.map((b) => ({ ...b })) },
+      { id: "slide-1", enabled: true, image: hero1, label: { ar: "جراب يكمّل ستايلك", en: "A case that completes your style" }, title: { ar: "حماية شيك… تليق بموبايلك", en: "Smart protection, made for your phone" }, description: { ar: "جرابات مختارة بعناية، تجمع بين الشكل الحلو والحماية اللي تقدر تعتمد عليها كل يوم.", en: "Carefully selected cases that bring together a clean look and protection you can count on every day." }, cta: { ar: "شوف الجرابات", en: "Shop Cases" }, cta2: { ar: "عرض كل المنتجات", en: "View all products" }, link: "cases", contentPosition: "top", textAlign: "center", overlay: 0, benefits: defaultBenefits.map((b, bi) => ({ ...b, mobile: { ...defaultHeroMobileBenefitConfig(b), enabled: bi < 3 } })) },
+      { id: "slide-2", enabled: true, image: hero2, label: { ar: "اشحن وكمّل يومك", en: "Charge and keep going" }, title: { ar: "شحن سريع… من غير ما يعطّل يومك", en: "Fast charging, without slowing you down" }, description: { ar: "شواحن وكابلات عملية لكل مشاويرك، عشان تفضل جاهز من أول اليوم لآخره.", en: "Practical chargers and cables for every part of your day, so you stay ready from morning to night." }, cta: { ar: "شوف الشواحن", en: "Shop Chargers" }, cta2: { ar: "عرض كل المنتجات", en: "View all products" }, link: "chargers", contentPosition: "top", textAlign: "center", overlay: 0, benefits: defaultBenefits.map((b, bi) => ({ ...b, mobile: { ...defaultHeroMobileBenefitConfig(b), enabled: bi < 3 } })) },
+      { id: "slide-3", enabled: true, image: hero3, label: { ar: "الشحن على السريع", en: "Wireless, made easy" }, title: { ar: "حط موبايلك… وسيب الباقي علينا", en: "Drop your phone. Let charging do the rest." }, description: { ar: "شحن لاسلكي عملي يخلي مكانك أرتب وروتينك أسهل، من غير كابلات متشابكة.", en: "Practical wireless charging that keeps your setup cleaner and your routine easier, without tangled cables." }, cta: { ar: "شوف الشحن اللاسلكي", en: "Shop Wireless" }, cta2: { ar: "عرض كل المنتجات", en: "View all products" }, link: "wireless-charging", contentPosition: "top", textAlign: "center", overlay: 0, benefits: defaultBenefits.map((b, bi) => ({ ...b, mobile: { ...defaultHeroMobileBenefitConfig(b), enabled: bi < 3 } })) },
     ],
   };
 }
@@ -86,7 +87,7 @@ export function HeroSlider() {
   const textAlign = slide.textAlign === "right" ? "text-right" : slide.textAlign === "left" ? "text-left" : "text-center";
   const justify = slide.textAlign === "right" ? "justify-end" : slide.textAlign === "left" ? "justify-start" : "justify-center";
 
-  return <section className="relative w-full overflow-hidden bg-white text-[#17134f]">
+  return <section id="sodfa-hero" className="relative w-full overflow-hidden bg-white text-[#17134f]">
     <div className="relative mx-auto hidden w-full max-w-[1667px] aspect-[1667/943] min-h-[620px] sm:min-h-0 lg:block">
       {slides.map((s, i) => <img key={s.id} src={s.image} alt="" aria-hidden={i !== index} loading={i === index ? "eager" : "lazy"} decoding="async" className={cn("absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-[1000ms] ease-out", i === index ? "opacity-100" : "pointer-events-none opacity-0")} />)}
       {slide.overlay > 0 && <div className="absolute inset-0 bg-white" style={{ opacity: slide.overlay }} />}
@@ -109,19 +110,120 @@ export function HeroSlider() {
       </div>
     </div>
 
-    <div className="lg:hidden relative mx-auto w-full aspect-[1667/943] overflow-hidden bg-white">
-      {slides.map((s, i) => <img key={`mobile-${s.id}`} src={s.image} alt="" aria-hidden={i !== index} loading={i === index ? "eager" : "lazy"} decoding="async" className={cn("absolute inset-0 h-full w-full object-contain object-center transition-opacity duration-[1000ms] ease-out", i === index ? "opacity-100" : "pointer-events-none opacity-0")} />)}
-      {slide.overlay > 0 && <div className="absolute inset-0 bg-white" style={{ opacity: slide.overlay }} />}
-      <div key={`mobile-${slide.id}`} className="absolute inset-0" dir="rtl">
-        <div className={cn("absolute inset-x-[7%] text-center", contentPositionClass(slide.contentPosition))}>
-          <div className="mx-auto flex items-center justify-center gap-2 text-[9px] font-semibold text-[#432493]"><span className="h-px w-6 rounded-full bg-[#7135d5]" /><span>{lang === "ar" ? slide.label.ar : slide.label.en}</span><span className="h-px w-6 rounded-full bg-[#7135d5]" /></div>
-          <h1 className="mx-auto mt-2 max-w-[88%] text-[clamp(21px,7vw,34px)] font-black leading-[1.12] tracking-[-0.04em] text-[#17134f]">{lang === "ar" ? slide.title.ar : slide.title.en}</h1>
-          <p className="mx-auto mt-2 max-w-[86%] text-[10px] font-medium leading-5 text-[#655d91]">{lang === "ar" ? slide.description.ar : slide.description.en}</p>
-          <div className="mt-4 flex items-center justify-center gap-3"><Link to="/category/$slug" params={{ slug: slide.link }} className="inline-flex h-9 min-w-[112px] items-center justify-center gap-1.5 rounded-full bg-gradient-to-l from-[#4f1fc4] via-[#7429ca] to-[#be42ce] px-3 text-[10px] font-bold text-white shadow-[0_8px_20px_rgba(117,45,202,.22)]">{lang === "ar" ? slide.cta.ar : slide.cta.en}<Arrow className="h-3 w-3" /></Link><Link to="/categories" className="inline-flex h-9 min-w-[112px] items-center justify-center rounded-full border border-[#9b5de0] bg-white/65 px-3 text-[10px] font-bold text-[#6830c5] backdrop-blur-sm">{lang === "ar" ? slide.cta2.ar : slide.cta2.en}</Link></div>
+    {(() => {
+      const mobile = { ...defaultHeroMobileConfig(), ...(slide.mobile || {}) };
+      const mobileTextAlign = mobile.textAlign === "right" ? "text-right" : mobile.textAlign === "left" ? "text-left" : "text-center";
+      const mobileImage = slide.mobileImage || slide.image;
+      const mobileContentPosition = mobile.contentVertical === "center"
+        ? { left: `${mobile.contentHorizontal}%`, top: "42%", transform: "translate(-50%, -50%)" }
+        : mobile.contentVertical === "bottom"
+          ? { left: `${mobile.contentHorizontal}%`, bottom: "18%", transform: "translateX(-50%)" }
+          : { left: `${mobile.contentHorizontal}%`, top: "8.5%", transform: "translateX(-50%)" };
+      const mobileBenefits = slide.benefits.filter((b) => {
+        const m = { ...defaultHeroMobileBenefitConfig(b), ...(b.mobile || {}) };
+        return b.enabled && m.enabled;
+      });
+
+      return <div
+        id="sodfa-mobile-hero"
+        className="relative mx-auto min-h-[650px] w-full overflow-hidden bg-[#fbfaff] lg:hidden"
+        style={{ aspectRatio: "9 / 16" }}
+      >
+        {/* The top of the mobile hero carries the soft purple wash; the product area stays crisp. */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-[2] h-[48%] bg-gradient-to-b from-[#8e5be8]/20 via-[#c9b5f5]/10 to-transparent" />
+
+        <img
+          src={mobileImage}
+          alt=""
+          aria-hidden="true"
+          loading="eager"
+          decoding="async"
+          className={cn(
+            "absolute inset-0 h-full w-full transition-opacity duration-[1000ms] ease-out",
+            "opacity-100",
+          )}
+          style={{ objectFit: mobile.imageFit, objectPosition: mobile.imagePosition }}
+        />
+
+        {mobile.overlay > 0 && <div className="absolute inset-0 z-[3] bg-white" style={{ opacity: mobile.overlay }} />}
+
+        <div key={`mobile-${slide.id}`} className="absolute inset-0 z-10" dir="rtl">
+          <div
+            className={cn("absolute", mobileTextAlign)}
+            style={{ ...mobileContentPosition, width: `${mobile.contentWidth}%` }}
+          >
+            {mobile.showLabel && (
+              <div className="mx-auto flex items-center justify-center gap-2 font-semibold text-[#432493]" style={{ fontSize: `${mobile.labelSize}px` }}>
+                <span className="h-px w-7 rounded-full bg-[#7135d5]" />
+                <span>{lang === "ar" ? slide.label.ar : slide.label.en}</span>
+                <span className="h-px w-7 rounded-full bg-[#7135d5]" />
+              </div>
+            )}
+
+            {mobile.showTitle && (
+              <h1 className="mx-auto mt-3 max-w-[95%] font-black leading-[1.12] tracking-[-0.04em] text-[#17134f]" style={{ fontSize: `clamp(28px, ${mobile.titleSize}vw, 43px)` }}>
+                {lang === "ar" ? slide.title.ar : slide.title.en}
+              </h1>
+            )}
+
+            {mobile.showDescription && (
+              <p className="mx-auto mt-2 max-w-[92%] font-medium leading-[1.7] text-[#655d91]" style={{ fontSize: `${mobile.descriptionSize}px` }}>
+                {lang === "ar" ? slide.description.ar : slide.description.en}
+              </p>
+            )}
+
+            {mobile.showButtons && (
+              <div className="flex items-center justify-center gap-2.5" style={{ marginTop: `${mobile.contentGap}px`, transform: `scale(${mobile.buttonScale})` }}>
+                <Link
+                  to="/category/$slug"
+                  params={{ slug: slide.link }}
+                  className="inline-flex h-10 min-w-[124px] items-center justify-center gap-1.5 rounded-full bg-gradient-to-l from-[#4f1fc4] via-[#7429ca] to-[#be42ce] px-4 text-[11px] font-bold text-white shadow-[0_10px_24px_rgba(117,45,202,.24)]"
+                >
+                  {lang === "ar" ? slide.cta.ar : slide.cta.en}
+                  <Arrow className="h-3.5 w-3.5" />
+                </Link>
+                <Link
+                  to="/categories"
+                  className="inline-flex h-10 min-w-[124px] items-center justify-center rounded-full border border-[#9b5de0] bg-white/75 px-4 text-[11px] font-bold text-[#6830c5] shadow-[0_6px_18px_rgba(106,49,180,.06)] backdrop-blur-sm"
+                >
+                  {lang === "ar" ? slide.cta2.ar : slide.cta2.en}
+                </Link>
+              </div>
+            )}
+          </div>
+
+          {mobile.showBenefits && (
+            <div className="absolute inset-x-[4.5%] bottom-[4.5%] grid grid-cols-3 items-end gap-2">
+              {mobileBenefits.map((b) => {
+                const Icon = iconMap[(b.icon as IconName)] || ShieldCheck;
+                const m = { ...defaultHeroMobileBenefitConfig(b), ...(b.mobile || {}) };
+                return (
+                  <div key={`mobile-benefit-${b.id}`} className="min-w-0 text-center" dir="rtl">
+                    <span
+                      className="mx-auto grid place-items-center rounded-full bg-[rgba(212,194,255,.78)] text-[#4820ae] shadow-[0_8px_20px_rgba(113,53,213,.12)] backdrop-blur-sm"
+                      style={{ width: `${Math.min(m.iconSize, 48)}px`, height: `${Math.min(m.iconSize, 48)}px` }}
+                    >
+                      <Icon style={{ width: `${Math.min(m.iconSize, 48) * 0.48}px`, height: `${Math.min(m.iconSize, 48) * 0.48}px` }} />
+                    </span>
+                    <span className="mt-1.5 block truncate font-bold leading-[1.25] text-[#17134f]" style={{ fontSize: `${Math.min(m.titleSize, 9.5)}px` }}>
+                      {lang === "ar" ? b.title.ar : b.title.en}
+                    </span>
+                    <span className="mx-auto mt-0.5 block line-clamp-2 max-w-[110px] font-medium leading-[1.35] text-[#665e90]" style={{ fontSize: `${Math.min(m.descriptionSize, 7.5)}px` }}>
+                      {lang === "ar" ? b.description.ar : b.description.en}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="absolute bottom-[1.2%] left-1/2 flex -translate-x-1/2 items-center gap-1.5">
+            {slides.map((s, i) => (
+              <button key={`mobile-dot-${s.id}`} type="button" onClick={() => setIndex(i)} aria-label={`Slide ${i + 1}`} className={cn("h-1.5 rounded-full transition-all duration-500", i === index ? "w-10 bg-[#7135d5]" : "w-5 bg-[#d5cdea]")} />
+            ))}
+          </div>
         </div>
-        {slide.benefits.filter((b) => b.enabled).map((b, i) => { const Icon = iconMap[(b.icon as IconName)] || ShieldCheck; const sideLeft = b.side === "left"; const bottom = b.vertical === "bottom"; return <div key={`mobile-benefit-${b.id}`} className="absolute w-[29%] text-center" style={sideLeft ? { left: "2%", ...(bottom ? { bottom: "8%" } : { top: "48%" }) } : { right: "2%", ...(bottom ? { bottom: "8%" } : { top: "48%" }) }}><span className="mx-auto grid h-10 w-10 place-items-center rounded-full bg-[rgba(212,194,255,.72)] text-[#4820ae] shadow-[0_6px_18px_rgba(113,53,213,.12)] backdrop-blur-sm"><Icon className="h-5 w-5" /></span><span className="mt-1.5 block text-[9px] font-bold leading-[1.3] text-[#17134f]">{lang === "ar" ? b.title.ar : b.title.en}</span><span className="mx-auto mt-0.5 block max-w-[125px] text-[7px] font-medium leading-[1.45] text-[#665e90]">{lang === "ar" ? b.description.ar : b.description.en}</span></div>; })}
-        <div className="absolute bottom-[3.5%] left-1/2 flex -translate-x-1/2 items-center gap-1.5">{slides.map((s, i) => <button key={`mobile-dot-${s.id}`} type="button" onClick={() => setIndex(i)} aria-label={`Slide ${i + 1}`} className={cn("h-1.5 rounded-full transition-all duration-500", i === index ? "w-10 bg-[#7135d5]" : "w-5 bg-[#d5cdea]")} />)}</div>
-      </div>
-    </div>
+      </div>;
+    })()}
   </section>;
 }

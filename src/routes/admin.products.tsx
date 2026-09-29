@@ -91,14 +91,19 @@ function makeVariant(): VariantDraft {
   };
 }
 
-function normalizeVariantType(value: string | null | undefined) {
+const MAIN_VARIANT_TYPES = ["color", "model", "size", "storage", "material", "shape", "other"] as const;
+type MainVariantType = (typeof MAIN_VARIANT_TYPES)[number];
+
+function normalizeVariantType(value: string | null | undefined): MainVariantType | "" {
   const v = (value || "").trim().toLowerCase();
+  if (!v) return "";
   if (["color", "لون", "اللون"].includes(v)) return "color";
   if (["model", "موديل", "الموديل", "جهاز"].includes(v)) return "model";
   if (["size", "مقاس", "المقاس", "حجم"].includes(v)) return "size";
   if (["storage", "سعة", "السعة", "مساحة"].includes(v)) return "storage";
   if (["material", "خامة", "الخامة", "مادة"].includes(v)) return "material";
   if (["shape", "شكل", "الشكل"].includes(v)) return "shape";
+  if (MAIN_VARIANT_TYPES.includes(v as MainVariantType)) return v as MainVariantType;
   return "other";
 }
 
@@ -495,7 +500,10 @@ function ProductsAdmin() {
         name_ar: form.name_ar.trim(),
         name_en: form.name_en.trim(),
         variant_display_name: form.variant_display_name.trim() || null,
-        variant_type: form.variant_type.trim() || null,
+        // IMPORTANT: this is the main product's own variation type.
+        // It must be saved independently from model_id. Selecting a model as the
+        // device model must never force variant_type back to "model".
+        variant_type: form.variant_type ? normalizeVariantType(form.variant_type) || null : null,
         variant_value: form.variant_value.trim() || null,
         description_ar: form.description_ar || null,
         description_en: form.description_en || null,
@@ -518,13 +526,26 @@ function ProductsAdmin() {
       }
 
       if (isEditing) {
-        const r = await supabase.from("products").update(payload).eq("id", editing).select("id").single();
+        const r = await supabase.from("products").update(payload).eq("id", editing).select("id,variant_type,variant_value").single();
         if (r.error) throw r.error;
         productId = r.data.id;
+        // Verify the database returned exactly what the form asked it to save.
+        // This makes a DB trigger/default that overwrites the variation type visible
+        // immediately instead of silently showing the old value after reload.
+        const expectedType = payload.variant_type ?? null;
+        const savedType = r.data.variant_type ?? null;
+        if (savedType !== expectedType || (r.data.variant_value ?? null) !== (payload.variant_value ?? null)) {
+          throw new Error(`قاعدة البيانات غيّرت نوع الاختلاف الرئيسي. المطلوب: ${expectedType || "بدون تفريعة"}، المحفوظ: ${savedType || "بدون تفريعة"}. راجع Trigger/Default على products.variant_type.`);
+        }
       } else {
-        const r = await supabase.from("products").insert(payload).select("id").single();
+        const r = await supabase.from("products").insert(payload).select("id,variant_type,variant_value").single();
         if (r.error) throw r.error;
         productId = r.data.id;
+        const expectedType = payload.variant_type ?? null;
+        const savedType = r.data.variant_type ?? null;
+        if (savedType !== expectedType || (r.data.variant_value ?? null) !== (payload.variant_value ?? null)) {
+          throw new Error(`قاعدة البيانات غيّرت نوع الاختلاف الرئيسي. المطلوب: ${expectedType || "بدون تفريعة"}، المحفوظ: ${savedType || "بدون تفريعة"}. راجع Trigger/Default على products.variant_type.`);
+        }
       }
 
       if (!productId) throw new Error("تعذر تحديد رقم المنتج.");
@@ -561,7 +582,7 @@ function ProductsAdmin() {
           const vp: any = {
             product_id: productId,
             variant_name: v.variant_name.trim() || v.shape.trim() || v.variant_value.trim() || form.variant_display_name.trim() || form.name_ar.trim() || form.name_en.trim() || `Product ${i + 1}`,
-            variant_type: v.variant_type.trim() || "other",
+            variant_type: normalizeVariantType(v.variant_type),
             variant_value: value || null,
             shape: v.shape.trim() || null,
             name_ar: v.name_ar.trim() || null,
