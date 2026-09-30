@@ -619,6 +619,8 @@ export async function getStoreProduct(slug: string): Promise<StoreProduct | null
   const product: DbProduct = {
     id: row.id, slug: row.slug, name_ar: row.name_ar || "", name_en: row.name_en || "",
     variant_display_name: row.variant_display_name ?? null,
+    variant_type: row.variant_type ?? null,
+    variant_value: row.variant_value ?? null,
     description_ar: row.description_ar ?? null, description_en: row.description_en ?? null,
     category_id: row.category_id ?? null, model_id: row.model_id ?? null, price: Number(row.final_price) > 0 ? Number(row.final_price) : 0,
     old_price: Number(row.base_price ?? 0) > 0 ? Number(row.base_price) : null,

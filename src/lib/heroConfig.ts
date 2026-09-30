@@ -11,6 +11,8 @@ export type HeroTextStyle = {
   gradientFrom: string;
   gradientTo: string;
   gradientAngle: number;
+  fontSizeAr?: number;
+  fontSizeEn?: number;
 };
 
 export const defaultHeroTextStyle = (color = "#17134f"): HeroTextStyle => ({

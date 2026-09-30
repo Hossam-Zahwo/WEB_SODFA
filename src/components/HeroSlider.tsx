@@ -113,9 +113,9 @@ export function HeroSlider() {
       {slide.overlay > 0 && <div className="absolute inset-0 bg-white" style={{ opacity: slide.overlay }} />}
       <div key={slide.id} className="absolute inset-0">
         <div className={cn("absolute left-1/2 w-[64%] -translate-x-1/2", contentPositionClass(slide.contentPosition), textAlign)} style={{ paddingTop: desktopSpacing.contentPaddingTop, paddingRight: desktopSpacing.contentPaddingRight, paddingBottom: desktopSpacing.contentPaddingBottom, paddingLeft: desktopSpacing.contentPaddingLeft }} dir="rtl">
-          <div className={cn("hero-reference-label mx-auto flex items-center gap-[18px] text-[clamp(11px,1.05vw,18px)] font-semibold leading-none", justify)} style={textStyleCss(textStyleWithFallback(desktopTextStyles.label, "#432493"))}><span className="h-[2px] w-[clamp(28px,3vw,49px)] rounded-full bg-[#7135d5]" /><span>{lang === "ar" ? slide.label.ar : slide.label.en}</span><span className="h-[2px] w-[clamp(28px,3vw,49px)] rounded-full bg-[#7135d5]" /></div>
-          <h1 className="mx-auto max-w-[1100px] text-[clamp(32px,4.25vw,71px)] font-black leading-[1.16] tracking-[-0.045em]" style={{ ...textStyleCss(textStyleWithFallback(desktopTextStyles.title, "#17134f")), marginTop: desktopSpacing.labelTitle }}>{lang === "ar" ? slide.title.ar : slide.title.en}</h1>
-          <p className="mx-auto max-w-[850px] text-[clamp(12px,1.12vw,19px)] font-medium leading-[1.8]" style={{ ...textStyleCss(textStyleWithFallback(desktopTextStyles.description, "#655d91")), marginTop: desktopSpacing.titleDescription }}>{lang === "ar" ? slide.description.ar : slide.description.en}</p>
+          <div className={cn("hero-reference-label mx-auto flex items-center gap-[18px] text-[clamp(11px,1.05vw,18px)] font-semibold leading-none", justify)} style={{ ...textStyleCss(textStyleWithFallback(desktopTextStyles.label, "#432493")), fontSize: (lang === "ar" ? desktopTextStyles.label.fontSizeAr : desktopTextStyles.label.fontSizeEn) ? `${lang === "ar" ? desktopTextStyles.label.fontSizeAr : desktopTextStyles.label.fontSizeEn}px` : undefined }}><span className="h-[2px] w-[clamp(28px,3vw,49px)] rounded-full bg-[#7135d5]" /><span>{lang === "ar" ? slide.label.ar : slide.label.en}</span><span className="h-[2px] w-[clamp(28px,3vw,49px)] rounded-full bg-[#7135d5]" /></div>
+          <h1 className="mx-auto max-w-[1100px] text-[clamp(32px,4.25vw,71px)] font-black leading-[1.16] tracking-[-0.045em]" style={{ ...textStyleCss(textStyleWithFallback(desktopTextStyles.title, "#17134f")), marginTop: desktopSpacing.labelTitle, fontSize: (lang === "ar" ? desktopTextStyles.title.fontSizeAr : desktopTextStyles.title.fontSizeEn) ? `${lang === "ar" ? desktopTextStyles.title.fontSizeAr : desktopTextStyles.title.fontSizeEn}px` : undefined }}>{lang === "ar" ? slide.title.ar : slide.title.en}</h1>
+          <p className="mx-auto max-w-[850px] text-[clamp(12px,1.12vw,19px)] font-medium leading-[1.8]" style={{ ...textStyleCss(textStyleWithFallback(desktopTextStyles.description, "#655d91")), marginTop: desktopSpacing.titleDescription, fontSize: (lang === "ar" ? desktopTextStyles.description.fontSizeAr : desktopTextStyles.description.fontSizeEn) ? `${lang === "ar" ? desktopTextStyles.description.fontSizeAr : desktopTextStyles.description.fontSizeEn}px` : undefined }}>{lang === "ar" ? slide.description.ar : slide.description.en}</p>
           <div className={cn("flex items-center", justify)} style={{ marginTop: desktopSpacing.descriptionButtons, gap: desktopSpacing.buttonGap }} dir="rtl"><HeroAction to={slide.link} primary textStyle={textStyleWithFallback(desktopTextStyles.cta, "#ffffff")}>{lang === "ar" ? slide.cta.ar : slide.cta.en}<Arrow className="h-[clamp(15px,1.2vw,20px)] w-[clamp(15px,1.2vw,20px)]" /></HeroAction><HeroAction to="categories" textStyle={textStyleWithFallback(desktopTextStyles.cta2, "#6830c5")}>{lang === "ar" ? slide.cta2.ar : slide.cta2.en}</HeroAction></div>
         </div>
         {slide.benefits.filter((b) => b.enabled).map((b, i) => {
@@ -177,7 +177,7 @@ export function HeroSlider() {
             style={{ ...mobileContentPosition, width: `${mobile.contentWidth}%`, paddingTop: mobileSpacing.contentPaddingTop, paddingRight: mobileSpacing.contentPaddingRight, paddingBottom: mobileSpacing.contentPaddingBottom, paddingLeft: mobileSpacing.contentPaddingLeft }}
           >
             {mobile.showLabel && (
-              <div className="mx-auto flex items-center justify-center gap-2 font-semibold" style={{ ...textStyleCss(textStyleWithFallback(mobileTextStyles.label, "#432493")), fontSize: `${mobile.labelSize}px` }}>
+              <div className="mx-auto flex items-center justify-center gap-2 font-semibold" style={{ ...textStyleCss(textStyleWithFallback(mobileTextStyles.label, "#432493")), fontSize: `${(lang === "ar" ? mobileTextStyles.label.fontSizeAr : mobileTextStyles.label.fontSizeEn) ?? mobile.labelSize}px` }}>
                 <span className="h-px w-7 rounded-full bg-[#7135d5]" />
                 <span>{lang === "ar" ? slide.label.ar : slide.label.en}</span>
                 <span className="h-px w-7 rounded-full bg-[#7135d5]" />
@@ -185,13 +185,13 @@ export function HeroSlider() {
             )}
 
             {mobile.showTitle && (
-              <h1 className="mx-auto max-w-[95%] font-black leading-[1.12] tracking-[-0.04em]" style={{ ...textStyleCss(textStyleWithFallback(mobileTextStyles.title, "#17134f")), marginTop: mobileSpacing.labelTitle, fontSize: `clamp(28px, ${mobile.titleSize}vw, 43px)` }}>
+              <h1 className="mx-auto max-w-[95%] font-black leading-[1.12] tracking-[-0.04em]" style={{ ...textStyleCss(textStyleWithFallback(mobileTextStyles.title, "#17134f")), marginTop: mobileSpacing.labelTitle, fontSize: (lang === "ar" ? mobileTextStyles.title.fontSizeAr : mobileTextStyles.title.fontSizeEn) ? `${lang === "ar" ? mobileTextStyles.title.fontSizeAr : mobileTextStyles.title.fontSizeEn}px` : `clamp(28px, ${mobile.titleSize}vw, 43px)` }}>
                 {lang === "ar" ? slide.title.ar : slide.title.en}
               </h1>
             )}
 
             {mobile.showDescription && (
-              <p className="mx-auto max-w-[92%] font-medium leading-[1.7]" style={{ ...textStyleCss(textStyleWithFallback(mobileTextStyles.description, "#655d91")), marginTop: mobileSpacing.titleDescription, fontSize: `${mobile.descriptionSize}px` }}>
+              <p className="mx-auto max-w-[92%] font-medium leading-[1.7]" style={{ ...textStyleCss(textStyleWithFallback(mobileTextStyles.description, "#655d91")), marginTop: mobileSpacing.titleDescription, fontSize: `${(lang === "ar" ? mobileTextStyles.description.fontSizeAr : mobileTextStyles.description.fontSizeEn) ?? mobile.descriptionSize}px` }}>
                 {lang === "ar" ? slide.description.ar : slide.description.en}
               </p>
             )}
