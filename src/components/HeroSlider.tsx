@@ -217,7 +217,7 @@ export function HeroSlider() {
           </div>
 
           {mobile.showBenefits && (
-            <div className="absolute inset-x-[4.5%] bottom-[4.5%] grid grid-cols-3 items-end gap-2">
+            <div className="absolute inset-x-[4.5%] bottom-[4.5%] grid grid-cols-2 items-end gap-x-4 gap-y-3">
               {mobileBenefits.map((b) => {
                 const Icon = iconMap[(b.icon as IconName)] || ShieldCheck;
                 const m = { ...defaultHeroMobileBenefitConfig(b), ...(b.mobile || {}) };

@@ -344,7 +344,7 @@ export function Header() {
               hover:bg-card
               hover:text-foreground
             `,
-              pathname === "/" && heroActive ? "bg-white/15 text-[#30205f]" : "bg-transparent",
+              pathname === "/" && heroActive ? "bg-white/15 text-white" : "bg-transparent",
             )}
           >
             <Search className="h-5 w-5" />
@@ -365,19 +365,10 @@ export function Header() {
           <Link
             to="/cart"
             aria-label={t("nav.cart")}
-            className="
-              relative
-              grid
-              h-10
-              w-10
-              place-items-center
-              rounded-full
-              text-muted-foreground
-              transition-all
-              duration-200
-              hover:bg-card
-              hover:text-foreground
-            "
+            className={cn(
+              "relative grid h-10 w-10 place-items-center rounded-full transition-all duration-200 hover:bg-card hover:text-foreground",
+              pathname === "/" && heroActive ? "text-white" : "text-muted-foreground",
+            )}
           >
             <ShoppingBag className="h-5 w-5" />
 
@@ -412,19 +403,10 @@ export function Header() {
             type="button"
             aria-label={t("nav.menu")}
             onClick={() => setMenuOpen((v) => !v)}
-            className="
-              grid
-              h-10
-              w-10
-              place-items-center
-              rounded-full
-              text-muted-foreground
-              transition-all
-              duration-200
-              hover:bg-card
-              hover:text-foreground
-              md:hidden
-            "
+            className={cn(
+              "grid h-10 w-10 place-items-center rounded-full transition-all duration-200 hover:bg-card hover:text-foreground md:hidden",
+              pathname === "/" && heroActive ? "text-white" : "text-muted-foreground",
+            )}
           >
             {menuOpen ? (
               <X className="h-5 w-5" />
