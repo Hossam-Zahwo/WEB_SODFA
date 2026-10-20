@@ -38,7 +38,7 @@
     "@supabase/supabase-js": "latest",
     "@tanstack/react-query": "latest",
     "@tanstack/react-router": "latest",
-    "@tanstack/react-start": "latest",
+    "@tanstack/react-start": "^1.168.60",
     "class-variance-authority": "latest",
     "clsx": "latest",
     "cmdk": "latest",
@@ -66,5 +66,8 @@
     "tailwindcss": "latest",
     "typescript": "latest",
     "vite": "latest"
+  },
+  "overrides": {
+    "@tanstack/start-server-core": "1.169.39"
   }
 }
