@@ -925,7 +925,7 @@ function ProductsAdmin() {
   return (
     <AdminGuard>
       <AdminPage>
-        <div className="mx-auto max-w-[1500px]">
+        <div className="mx-auto max-w-[1500px] sodfa-products-admin">
           <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-3">
@@ -950,11 +950,11 @@ function ProductsAdmin() {
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-5 py-4 sm:px-7">
                 <div className="flex items-center gap-3">
                   <button type="button" onClick={reset} className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 hover:bg-slate-50">←</button>
-                  <div><h2 className="text-xl font-black">{editing ? "تعديل المنتج" : "Add New Product"}</h2><p className="text-xs text-slate-500">{editing ? "تعديل البيانات والصور والـ Variants" : "أضف المنتج بكل تفاصيله من مكان واحد"}</p></div>
+                  <div><h2 className="text-xl font-black">{editing ? "تعديل المنتج" : "إضافة منتج جديد"}</h2><p className="text-xs text-slate-500">{editing ? "تعديل البيانات والصور والـ Variants" : "أضف المنتج بكل تفاصيله من مكان واحد"}</p></div>
                 </div>
                 <div className="flex gap-2">
                   <Button type="button" variant="outline" className="border-slate-200 bg-white" onClick={reset}>إلغاء</Button>
-                  <Button type="submit" form="product-editor" disabled={loading} className="bg-blue-600 text-white hover:bg-blue-700"><Save size={16}/> {loading ? "جاري الحفظ..." : "Publish"}</Button>
+                  <Button type="submit" form="product-editor" disabled={loading} className="bg-violet-700 text-white hover:bg-violet-800"><Save size={16}/> {loading ? "جاري الحفظ..." : "حفظ ونشر"}</Button>
                 </div>
               </div>
 
@@ -972,7 +972,7 @@ function ProductsAdmin() {
                   </div>}
                   {automationDone && <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800"><Check size={14} className="inline"/> تم تجهيز اقتراحات تلقائية. راجعها وعدّلها قبل Publish.</div>}
                 </div>
-                <form id="product-editor" onSubmit={save} className="grid gap-5 p-4 sm:p-6 lg:grid-cols-[290px_300px_minmax(0,1fr)]">
+                <form id="product-editor" onSubmit={save} className="grid gap-5 p-5 sm:p-7 lg:gap-6 lg:grid-cols-[minmax(220px,0.85fr)_minmax(260px,1fr)_minmax(340px,1.4fr)]">
                 <div className="space-y-5">
                   <ImageGalleryEditor
                     title="صور المنتج"
@@ -993,7 +993,7 @@ function ProductsAdmin() {
                     <div className="text-xs font-bold uppercase tracking-wider text-slate-500">Visibility</div>
                     <div className="mt-3 flex items-center justify-between">
                       <div><div className="text-sm font-bold">ظاهر للعملاء</div><div className="text-xs text-slate-500">يمكنك إخفاء المنتج مؤقتًا.</div></div>
-                      <button type="button" onClick={() => setForm((f) => ({ ...f, in_stock: !f.in_stock }))} className={`relative h-6 w-11 rounded-full transition ${form.in_stock ? "bg-blue-600" : "bg-slate-300"}`}><span className={`absolute top-1 h-4 w-4 rounded-full bg-white transition ${form.in_stock ? "right-1" : "right-6"}`}/></button>
+                      <button type="button" onClick={() => setForm((f) => ({ ...f, in_stock: !f.in_stock }))} className={`relative h-6 w-11 rounded-full transition ${form.in_stock ? "bg-violet-700" : "bg-slate-300"}`}><span className={`absolute top-1 h-4 w-4 rounded-full bg-white transition ${form.in_stock ? "right-1" : "right-6"}`}/></button>
                     </div>
                   </div>
                 </div>
@@ -1057,7 +1057,15 @@ function ProductsAdmin() {
 
                 <div className="space-y-5">
                   <CardContent className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <div className="flex items-center justify-between gap-3"><div><h3 className="font-black">Related Variants</h3><p className="text-xs text-slate-500">كل Variant يأخذ بيانات المنتج الأساسية ويضيف الاختلاف والصور.</p></div><button type="button" onClick={() => { const next = !hasVariants; setHasVariants(next); if (next && !drafts.length) setDrafts([makeVariant()]); }} className={`relative h-6 w-11 rounded-full ${hasVariants ? "bg-blue-600" : "bg-slate-300"}`}><span className={`absolute top-1 h-4 w-4 rounded-full bg-white transition ${hasVariants ? "right-1" : "right-6"}`}/></button></div>
+                    <div className="mb-5 rounded-2xl border border-violet-100 bg-violet-50/70 p-3 sm:p-4">
+                      <p className="mb-3 text-sm font-black text-violet-900">نوع المنتج</p>
+                      <div className="grid grid-cols-2 gap-2" role="group" aria-label="نوع المنتج">
+                        <button type="button" aria-pressed={!hasVariants} onClick={() => setHasVariants(false)} className={`rounded-xl border px-3 py-3 text-sm font-bold transition ${!hasVariants ? "border-violet-600 bg-violet-700 text-white shadow-sm" : "border-violet-200 bg-white text-slate-700 hover:border-violet-400"}`}>منتج عادي</button>
+                        <button type="button" aria-pressed={hasVariants} onClick={() => { setHasVariants(true); if (!drafts.length) setDrafts([makeVariant()]); }} className={`rounded-xl border px-3 py-3 text-sm font-bold transition ${hasVariants ? "border-violet-600 bg-violet-700 text-white shadow-sm" : "border-violet-200 bg-white text-slate-700 hover:border-violet-400"}`}>منتج بتفريعات</button>
+                      </div>
+                      <p className="mt-3 text-xs leading-6 text-slate-600">{hasVariants ? "أضف لكل تفريعة اختلافها وسعرها ومخزونها وصورها بشكل مستقل." : "منتج واحد ببيانات وسعر ومخزون وصور أساسية."}</p>
+                    </div>
+                    <div className="flex items-center justify-between gap-3"><div><h3 className="font-black">تفريعات المنتج</h3><p className="text-xs text-slate-500">كل Variant يأخذ بيانات المنتج الأساسية ويضيف الاختلاف والصور.</p></div><button type="button" onClick={() => { const next = !hasVariants; setHasVariants(next); if (next && !drafts.length) setDrafts([makeVariant()]); }} className={`relative h-6 w-11 rounded-full ${hasVariants ? "bg-violet-700" : "bg-slate-300"}`}><span className={`absolute top-1 h-4 w-4 rounded-full bg-white transition ${hasVariants ? "right-1" : "right-6"}`}/></button></div>
                     {hasVariants && <div className="mt-4 space-y-4">{drafts.map((v, i) => (
                       <VariantEditor
                         key={v.id || i} variant={v} index={i} baseName={form.name_ar} categories={cats} models={models}

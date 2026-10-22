@@ -202,3 +202,11 @@
   .sodfa-product-page .product-gallery-arrow { width: 2.25rem; height: 2.25rem; }
   .sodfa-product-page .product-buy-row { grid-template-columns: minmax(0, auto) minmax(0, 1fr); }
 }
+
+/* SODFA refinement: preserve existing purple palette while improving admin spacing. */
+.sodfa-admin-editor .rounded-2xl { scroll-margin-top: 1rem; }
+.sodfa-admin-editor input[type="file"] { max-width: 100%; }
+.sodfa-admin-editor img { object-fit: contain; }
+@media (min-width: 768px) {
+  .sodfa-admin-editor .grid { row-gap: max(0.75rem, var(--admin-grid-gap, 0.75rem)); }
+}

@@ -27,9 +27,18 @@ export const Route = createFileRoute("/category/$slug")({
   component: CategoryPage,
 });
 
+/** Only phone cases and screen protectors require a device-series/model choice. */
+function requiresPhoneModelFilter(category: { slug: string; name_ar: string; name_en: string }) {
+  const slug = category.slug.toLowerCase().replace(/[_\s]+/g, "-");
+  const name = `${category.name_ar} ${category.name_en}`.toLowerCase();
+  return /(^|[-])(case|cases|cover|covers|screen-protector|screen-protectors|screen-protection|tempered-glass|screen-guard|screen-guards)([-]|$)/.test(slug)
+    || /جراب|جرابات|كفر|كفرات|اسكرين|إسكرين|سكرينة|سكرينات|واقي شاشة|حماية الشاشة|phone cases?|phone covers?|screen protectors?|tempered glass/.test(name);
+}
+
 function CategoryPage() {
   const data = Route.useLoaderData();
   const { pick, t } = useLang();
+  const showDeviceFilter = requiresPhoneModelFilter(data.category);
   const [selectedModel, setSelectedModel] = useState<string | undefined>();
   const [selectedSeries, setSelectedSeries] = useState<string | undefined>();
   const [products, setProducts] = useState(data.products);
@@ -66,8 +75,8 @@ function CategoryPage() {
   }, [products]);
 
   const filtered = useMemo(
-    () => products.filter((p) => { const seriesIds = new Set(data.models.filter(m => m.series_id === selectedSeries).map(m => m.id)); const okSeries = !selectedSeries || (p.modelId ? seriesIds.has(p.modelId) : false) || p.variants.some(v => v.modelId ? seriesIds.has(v.modelId) : false); const okModel = !selectedModel || p.modelId === selectedModel || p.variants.some(v => v.modelId === selectedModel); return okSeries && okModel; }),
-    [products, data.models, selectedModel, selectedSeries],
+    () => !showDeviceFilter ? products : products.filter((p) => { const seriesIds = new Set(data.models.filter(m => m.series_id === selectedSeries).map(m => m.id)); const okSeries = !selectedSeries || (p.modelId ? seriesIds.has(p.modelId) : false) || p.variants.some(v => v.modelId ? seriesIds.has(v.modelId) : false); const okModel = !selectedModel || p.modelId === selectedModel || p.variants.some(v => v.modelId === selectedModel); return okSeries && okModel; }),
+    [products, data.models, selectedModel, selectedSeries, showDeviceFilter],
   );
 
   return (
@@ -76,12 +85,12 @@ function CategoryPage() {
       <h1 className="mt-4 text-2xl font-bold sm:text-4xl">{pick(data.category.name_ar, data.category.name_en)}</h1>
       <p className="mt-1 text-sm text-subtle">{filtered.length} {t("shop.results")}</p>
 
-      <div className="mt-7">
+      {showDeviceFilter && <div className="mt-7">
         <DeviceFilter series={data.series as DbSeries[]} models={data.models as DbModel[]} selectedSeriesId={selectedSeries} selectedModelId={selectedModel} onSeriesSelect={setSelectedSeries} onModelSelect={setSelectedModel} productModelIds={modelIds} />
-      </div>
+      </div>}
 
       <div className="mt-8">
-        {selectedSeries && !selectedModel ? <p className="py-16 text-center text-sm text-subtle">{t("filter.chooseModel")}</p> : filtered.length ? <> <ProductGrid products={filtered} selectedModelId={selectedModel} /> {hasMore && <div className="mt-8 flex justify-center"><button type="button" onClick={() => void loadMore()} disabled={loadingMore} className="rounded-full border border-border px-6 py-3 text-sm font-semibold transition hover:border-primary/40 disabled:opacity-50">{loadingMore ? "جارٍ تحميل المزيد..." : "تحميل المزيد"}</button></div>} </> : <p className="py-16 text-center text-sm text-subtle">{t("filter.noProducts")}</p>}
+        {showDeviceFilter && selectedSeries && !selectedModel ? <p className="py-16 text-center text-sm text-subtle">{t("filter.chooseModel")}</p> : filtered.length ? <> <ProductGrid products={filtered} selectedModelId={showDeviceFilter ? selectedModel : undefined} /> {hasMore && <div className="mt-8 flex justify-center"><button type="button" onClick={() => void loadMore()} disabled={loadingMore} className="rounded-full border border-border px-6 py-3 text-sm font-semibold transition hover:border-primary/40 disabled:opacity-50">{loadingMore ? "جارٍ تحميل المزيد..." : "تحميل المزيد"}</button></div>} </> : <p className="py-16 text-center text-sm text-subtle">{t("filter.noProducts")}</p>}
       </div>
     </div>
   );

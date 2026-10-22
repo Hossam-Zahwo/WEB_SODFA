@@ -293,7 +293,7 @@ export function HeroSliderAdmin({ initialImages }: { initialImages: string[] }) 
         </div>
         {openId === slide.id && <CardContent className="space-y-6 p-5 sm:p-7">
           <div className="grid gap-5 lg:grid-cols-[280px_1fr]">
-            <div><div className="relative aspect-[16/9] overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">{slide.image ? <img src={slide.image} alt="" className="h-full w-full object-cover" /> : <div className="grid h-full place-items-center text-slate-400"><ImagePlus size={34}/></div>}<label className="absolute inset-x-3 bottom-3 flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-black/75 px-3 py-2 text-sm font-bold text-white backdrop-blur"><Upload size={15}/>{uploading === slide.id ? "جاري الرفع..." : "اختيار صورة"}<input type="file" accept="image/*" className="hidden" disabled={!!uploading} onChange={(e) => void uploadImage(slide, e.target.files?.[0])}/></label></div><p className="mt-2 text-xs text-slate-400">يفضل صورة Hero بنفس النسبة الحالية للحفاظ على الشكل.</p></div>
+            <div>{editorMode === "desktop" ? <><div className="relative aspect-[16/9] overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">{slide.image ? <img src={slide.image} alt="" className="h-full w-full object-contain" /> : <div className="grid h-full place-items-center text-slate-400"><ImagePlus size={34}/></div>}<label className="absolute inset-x-3 bottom-3 flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-black/75 px-3 py-2 text-sm font-bold text-white backdrop-blur"><Upload size={15}/>{uploading === slide.id ? "جاري الرفع..." : "اختيار صورة الديسكتوب"}<input type="file" accept="image/*" className="hidden" disabled={!!uploading} onChange={(e) => void uploadImage(slide, e.target.files?.[0])}/></label></div><p className="mt-2 text-xs text-slate-400">صورة واحدة لكل سلايد في وضع الديسكتوب.</p></> : <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4 text-sm leading-7 text-violet-900"><SmartphoneIcon size={22} className="mb-2"/>صورة الموبايل الوحيدة للسلايد موجودة بالأسفل داخل إعدادات الموبايل. لا تحتاج إلى رفع صورتين؛ عند عدم تخصيص صورة موبايل تُستخدم صورة الديسكتوب تلقائيًا.</div>}</div>
             <div className="space-y-4">
               <LangFields value={slide.label} onChange={(label) => updateSlide(slide.id, { label })} arLabel="Label" enLabel="Label" />
               <LangFields value={slide.title} onChange={(title) => updateSlide(slide.id, { title })} arLabel="العنوان" enLabel="Title" />
@@ -314,7 +314,7 @@ export function HeroSliderAdmin({ initialImages }: { initialImages: string[] }) 
 
           {editorMode === "mobile" && <div className="rounded-2xl border border-fuchsia-200 bg-fuchsia-50/60 p-4 sm:p-5">
             <div className="mb-4 flex items-center gap-2 font-bold text-slate-900"><SmartphoneIcon/> إعدادات شاشة الموبايل فقط</div>
-            <p className="mb-4 text-xs text-slate-500">الصورة، المقاسات، أماكن النصوص وإظهار كل جزء هنا مستقلة تمامًا عن الديسكتوب.</p>
+            <p className="mb-4 text-xs text-slate-500">صورة واحدة لكل سلايد على الموبايل؛ يمكن تخصيصها أو استخدام صورة الديسكتوب تلقائيًا. الإعدادات لا تغير صورة السلايدات الأخرى.</p>
 
             <div className="mb-5 grid gap-4 lg:grid-cols-[220px_1fr]">
               <div className="rounded-2xl border border-fuchsia-100 bg-white p-3">

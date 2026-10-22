@@ -34,7 +34,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           <div><div className="text-xl font-extrabold tracking-tight">SODFA</div><div className="text-xs text-slate-500">لوحة التحكم / Admin Dashboard</div></div>
           <Store className="text-black"/>
         </div>
-        <nav className="space-y-2">
+        <nav className="space-y-1.5">
           {nav.map(({to,label,icon:Icon}) => <Link key={to} to={to as any} onClick={() => setOpen(false)} className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all ${location.pathname === to ? "bg-gradient-to-r from-violet-100 to-fuchsia-50 text-violet-900 shadow-sm" : "text-slate-700 hover:bg-slate-50 hover:text-violet-800"}`}><Icon size={19}/>{label}</Link>)}
         </nav>
         <div className="absolute bottom-5 left-5 right-5 space-y-2">
@@ -42,7 +42,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           <Button variant="outline" className="w-full border-slate-200 bg-white text-slate-800 hover:bg-slate-50" onClick={logout}><LogOut size={18}/>تسجيل الخروج / Sign out</Button>
         </div>
       </aside>
-      <main className="min-h-screen bg-gradient-to-br from-[#faf8fc] via-white to-[#f7f0fa] lg:mr-72"><div className="mx-auto max-w-[1500px] p-5 pt-20 lg:p-8">{children}</div></main>
+      <main className="min-h-screen bg-gradient-to-br from-[#faf8fc] via-white to-[#f7f0fa] lg:mr-72"><div className="mx-auto max-w-[1560px] p-4 pt-20 sm:p-6 lg:p-9 lg:pt-10">{children}</div></main>
       {helpOpen && <div className="fixed inset-0 z-[130] grid place-items-center bg-slate-950/60 p-4" onClick={() => setHelpOpen(false)}><div role="dialog" aria-modal="true" className="w-full max-w-lg rounded-3xl bg-white p-6 text-slate-900 shadow-2xl" onClick={(e) => e.stopPropagation()}><div className="flex items-start justify-between gap-4"><div><h2 className="text-xl font-black">دليل لوحة التحكم</h2><p className="mt-1 text-sm text-slate-500">Admin dashboard guide</p></div><button onClick={() => setHelpOpen(false)} className="grid h-9 w-9 place-items-center rounded-full border border-slate-200" aria-label="إغلاق / Close"><X size={18}/></button></div><div className="mt-5 space-y-3 text-sm leading-7"><p><b>التنقل / Navigation:</b> استخدم القائمة الجانبية للوصول إلى الرئيسية والمنتجات والتصنيفات والطلبات والإعدادات. / Use the sidebar to move between dashboard sections.</p><p><b>الحفظ / Saving:</b> بعد أي تعديل، اضغط زر الحفظ وانتظر رسالة نجاح العملية. / Save changes and wait for confirmation.</p><p><b>المساعدة الخاصة بالصفحة / Page-specific help:</b> في الصفحات التي تحتوي على علامة (?) اضغط عليها لعرض تعليمات مفصلة للصفحة الحالية.</p><p><b>سلامة البيانات / Data safety:</b> لا تنفّذ عمليات حذف أو تأكيد قبل مراجعة التفاصيل. / Review details before deleting or confirming records.</p></div><button onClick={() => setHelpOpen(false)} className="mt-5 w-full rounded-xl bg-[#7B2C8E] px-4 py-3 text-sm font-bold text-white">فهمت / Got it</button></div></div>}
     </div>
   );

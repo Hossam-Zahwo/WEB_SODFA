@@ -139,10 +139,10 @@ export function HeroSlider() {
       const mobileTextAlign = mobile.textAlign === "right" ? "text-right" : mobile.textAlign === "left" ? "text-left" : "text-center";
       const mobileImage = slide.mobileImage || slide.image;
       const mobileContentPosition = mobile.contentVertical === "center"
-        ? { left: `${mobile.contentHorizontal}%`, top: "42%", transform: "translate(-50%, -50%)" }
+        ? { left: `${mobile.contentHorizontal}%`, top: "37%", transform: "translate(-50%, -50%)" }
         : mobile.contentVertical === "bottom"
-          ? { left: `${mobile.contentHorizontal}%`, bottom: "18%", transform: "translateX(-50%)" }
-          : { left: `${mobile.contentHorizontal}%`, top: "8.5%", transform: "translateX(-50%)" };
+          ? { left: `${mobile.contentHorizontal}%`, bottom: "25%", transform: "translateX(-50%)" }
+          : { left: `${mobile.contentHorizontal}%`, top: "12%", transform: "translateX(-50%)" };
       const mobileBenefits = slide.benefits.filter((b) => {
         const m = { ...defaultHeroMobileBenefitConfig(b), ...(b.mobile || {}) };
         return b.enabled && m.enabled;
@@ -173,11 +173,11 @@ export function HeroSlider() {
 
         <div key={`mobile-${slide.id}`} className="absolute inset-0 z-10" dir="rtl">
           <div
-            className={cn("absolute", mobileTextAlign)}
-            style={{ ...mobileContentPosition, width: `${mobile.contentWidth}%`, paddingTop: mobileSpacing.contentPaddingTop, paddingRight: mobileSpacing.contentPaddingRight, paddingBottom: mobileSpacing.contentPaddingBottom, paddingLeft: mobileSpacing.contentPaddingLeft }}
+            className={cn("absolute max-w-[94vw]", mobileTextAlign)}
+            style={{ ...mobileContentPosition, width: `${Math.min(mobile.contentWidth, 94)}%`, paddingTop: mobileSpacing.contentPaddingTop, paddingRight: mobileSpacing.contentPaddingRight, paddingBottom: mobileSpacing.contentPaddingBottom, paddingLeft: mobileSpacing.contentPaddingLeft }}
           >
             {mobile.showLabel && (
-              <div className="mx-auto flex items-center justify-center gap-2 font-semibold" style={{ ...textStyleCss(textStyleWithFallback(mobileTextStyles.label, "#432493")), fontSize: `${(lang === "ar" ? mobileTextStyles.label.fontSizeAr : mobileTextStyles.label.fontSizeEn) ?? mobile.labelSize}px` }}>
+              <div className="mx-auto flex flex-wrap items-center justify-center gap-1.5 font-semibold leading-snug" style={{ ...textStyleCss(textStyleWithFallback(mobileTextStyles.label, "#432493")), fontSize: `${Math.min((lang === "ar" ? mobileTextStyles.label.fontSizeAr : mobileTextStyles.label.fontSizeEn) ?? mobile.labelSize, 14)}px` }}>
                 <span className="h-px w-7 rounded-full bg-[#7135d5]" />
                 <span>{lang === "ar" ? slide.label.ar : slide.label.en}</span>
                 <span className="h-px w-7 rounded-full bg-[#7135d5]" />
@@ -217,7 +217,7 @@ export function HeroSlider() {
           </div>
 
           {mobile.showBenefits && (
-            <div className="absolute inset-x-[4.5%] bottom-[4.5%] grid grid-cols-2 items-end gap-x-4 gap-y-3">
+            <div className="absolute inset-x-[2%] bottom-[5%] grid grid-cols-4 items-start gap-1 rounded-2xl bg-white/70 px-1 py-2 backdrop-blur-sm">
               {mobileBenefits.map((b) => {
                 const Icon = iconMap[(b.icon as IconName)] || ShieldCheck;
                 const m = { ...defaultHeroMobileBenefitConfig(b), ...(b.mobile || {}) };
@@ -227,14 +227,14 @@ export function HeroSlider() {
                   <div key={`mobile-benefit-${b.id}`} className="min-w-0 text-center" dir="rtl">
                     <span
                       className="mx-auto grid place-items-center rounded-full bg-[rgba(212,194,255,.78)] text-[#4820ae] shadow-[0_8px_20px_rgba(113,53,213,.12)] backdrop-blur-sm"
-                      style={{ width: `${Math.min(m.iconSize, 48)}px`, height: `${Math.min(m.iconSize, 48)}px` }}
+                      style={{ width: `${Math.min(m.iconSize, 36)}px`, height: `${Math.min(m.iconSize, 36)}px` }}
                     >
-                      <Icon style={{ width: `${Math.min(m.iconSize, 48) * 0.48}px`, height: `${Math.min(m.iconSize, 48) * 0.48}px` }} />
+                      <Icon style={{ width: `${Math.min(m.iconSize, 36) * 0.48}px`, height: `${Math.min(m.iconSize, 36) * 0.48}px` }} />
                     </span>
-                    <span className="block truncate font-bold leading-[1.25]" style={{ ...textStyleCss(textStyleWithFallback(benefitStyles.title, "#17134f")), marginTop: benefitSpacing.benefitIconTitle, fontSize: `${Math.min(m.titleSize, 9.5)}px` }}>
+                    <span className="block line-clamp-2 font-bold leading-[1.25]" style={{ ...textStyleCss(textStyleWithFallback(benefitStyles.title, "#17134f")), marginTop: benefitSpacing.benefitIconTitle, fontSize: `${Math.min(m.titleSize, 9)}px` }}>
                       {lang === "ar" ? b.title.ar : b.title.en}
                     </span>
-                    <span className="mx-auto block line-clamp-2 max-w-[110px] font-medium leading-[1.35]" style={{ ...textStyleCss(textStyleWithFallback(benefitStyles.description, "#665e90")), marginTop: benefitSpacing.benefitTitleDescription, fontSize: `${Math.min(m.descriptionSize, 7.5)}px` }}>
+                    <span className="mx-auto hidden line-clamp-2 max-w-[110px] font-medium leading-[1.35]" style={{ ...textStyleCss(textStyleWithFallback(benefitStyles.description, "#665e90")), marginTop: benefitSpacing.benefitTitleDescription, fontSize: `${Math.min(m.descriptionSize, 7.5)}px` }}>
                       {lang === "ar" ? b.description.ar : b.description.en}
                     </span>
                   </div>

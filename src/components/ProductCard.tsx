@@ -100,7 +100,7 @@ export function ProductCard({
       to="/product/$slug"
       params={{ slug: product.slug }}
       search={{ variant: variant?.id }}
-      className="group relative flex h-[390px] min-w-0 flex-col overflow-hidden rounded-xl border border-border/70 bg-card transition-all duration-300 hover:border-primary/40 hover:bg-card-hover hover:shadow-card sm:h-[430px]"
+      className="group relative flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm transition-all duration-300 hover:border-primary/40 hover:bg-card-hover hover:shadow-card "
     >
       <div className="relative aspect-square shrink-0 overflow-hidden bg-white">
         <SmartImage
@@ -133,8 +133,8 @@ export function ProductCard({
         </div>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-2.5 p-3 sm:p-3.5">
-        <div className="min-h-[56px]">
+      <div className="flex min-h-0 flex-1 flex-col gap-2.5 p-3 sm:gap-3 sm:p-5">
+        <div className="min-h-[48px] sm:min-h-[56px]">
           <div className="line-clamp-2 text-[13px] font-semibold leading-5 sm:text-sm">{displayName}</div>
           {variant && (variant.value || variant.shape || variant.name) && (
             <div className="mt-0.5 line-clamp-1 text-[10px] text-subtle" title={variant.value || variant.shape || variant.name}>
@@ -167,11 +167,11 @@ export function ProductCard({
           {product.colors.length > 6 && !variant && <span className="text-[10px] text-subtle">+{product.colors.length - 6}</span>}
         </div>
 
-        <div className="mt-auto flex items-center gap-2">
-          <button type="button" onClick={onAdd} disabled={variant ? !variant.inStock : !product.inStock} aria-label={added ? t("product.added") : t("product.addToCart")} title={added ? t("product.added") : t("product.addToCart")} className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-primary/20 bg-primary/5 text-primary transition-all hover:scale-105 hover:border-primary/50 hover:bg-primary/10 disabled:opacity-40">
-            {added ? <Check className="h-4 w-4" /> : <ShoppingBasket className="h-4 w-4" />}
+        <div className="mt-auto flex flex-col gap-2 pt-2 sm:flex-row">
+          <button type="button" onClick={onAdd} disabled={variant ? !variant.inStock : !product.inStock} aria-label={added ? t("product.added") : t("product.addToCart")} title={added ? t("product.added") : t("product.addToCart")} className="flex h-10 w-full shrink-0 items-center justify-center gap-2 rounded-full sm:w-10 border border-primary/20 bg-primary/5 text-primary transition-all hover:scale-105 hover:border-primary/50 hover:bg-primary/10 disabled:opacity-40">
+            {added ? <Check className="h-4 w-4" /> : <ShoppingBasket className="h-4 w-4" />}<span className="text-[11px] font-bold sm:hidden">{added ? t("product.added") : t("product.addToCart")}</span>
           </button>
-          <button type="button" onClick={onBuyNow} disabled={variant ? !variant.inStock : !product.inStock} className="flex h-10 min-w-0 flex-1 items-center justify-center rounded-full bg-primary px-3 text-xs font-bold text-primary-foreground transition-all hover:bg-primary-dark disabled:opacity-40 sm:text-sm">
+          <button type="button" onClick={onBuyNow} disabled={variant ? !variant.inStock : !product.inStock} className="flex h-10 w-full min-w-0 flex-1 items-center justify-center rounded-full bg-primary px-3 text-xs font-bold text-primary-foreground transition-all hover:bg-primary-dark disabled:opacity-40 sm:text-sm">
             اطلب الآن
           </button>
         </div>
@@ -190,7 +190,7 @@ export function ProductGrid({
   selectedModelId?: string;
 }) {
   return (
-    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+    <div className="grid grid-cols-2 items-stretch gap-3 sm:gap-5 lg:grid-cols-4">
       {products.flatMap((product) => {
         if (selectedModelId) {
           const items: React.ReactNode[] = [];
